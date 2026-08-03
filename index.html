@@ -48,7 +48,6 @@
         .btn-whatsapp { background: var(--success); color: white; border: none; padding: 8px; border-radius: 5px; font-weight: 600; font-size: 13px; width: 100%; margin-top: auto; cursor: pointer; display: inline-block; text-align: center; text-decoration: none; }
 
         .my-item-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-edit { flex: 1; background: #1890ff; color: white; border: none; padding: 7px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; }
         .btn-delete { flex: 1; background: var(--danger); color: white; border: none; padding: 7px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-content: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
@@ -160,7 +159,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span>Account Register Karein</span>
-                <span class="close-modal" data-close="registerModal">&times;</span>
+                <span class="close-modal" onclick="closeModal('registerModal')">&times;</span>
             </div>
             <form id="regForm">
                 <div class="dp-preview-box">
@@ -191,7 +190,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span>Edit Profile</span>
-                <span class="close-modal" data-close="editProfileModal">&times;</span>
+                <span class="close-modal" onclick="closeModal('editProfileModal')">&times;</span>
             </div>
             <form id="editProfileForm">
                 <div class="dp-preview-box">
@@ -221,7 +220,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span id="sellModalTitle">Sell Item</span>
-                <span class="close-modal" data-close="sellModal">&times;</span>
+                <span class="close-modal" onclick="closeModal('sellModal')">&times;</span>
             </div>
             <form id="sellForm">
                 <input type="hidden" id="editingProdId" value="">
@@ -249,7 +248,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span>Secret Admin Login</span>
-                <span class="close-modal" data-close="adminAuthModal">&times;</span>
+                <span class="close-modal" onclick="closeModal('adminAuthModal')">&times;</span>
             </div>
             <form id="adminLoginForm">
                 <div class="form-group">
@@ -261,22 +260,8 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDekG6YIGsI3Yp6ZHrg__cyaAGcvK0QFzQ",
-            authDomain: "pakistani-bazaar-za.firebaseapp.com",
-            projectId: "pakistani-bazaar-za",
-            storageBucket: "pakistani-bazaar-za.firebasestorage.app",
-            messagingSenderId: "114513006163",
-            appId: "1:114513006163:web:c83ec48dbd9cfed84040a6",
-            databaseURL: "https://pakistani-bazaar-za-default-rtdb.firebaseio.com"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    <script>
+        const DB_BASE_URL = "https://pakistani-bazaar-za-default-rtdb.firebaseio.com";
 
         let currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
         let products = [];
@@ -284,6 +269,10 @@
         let uploadedImagesBase64 = [];
         let tempDpBase64 = "";
         let logoClickCount = 0;
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
 
         function compressImage(file, maxWidth, quality, callback) {
             if (!file) return callback("");
@@ -318,32 +307,43 @@
             }
         }
 
-        // Event Listeners Initialization
-        document.addEventListener('DOMContentLoaded', () => {
-            updateUserPill();
-
-            onValue(ref(db, "products"), (snapshot) => {
+        async function fetchProducts() {
+            try {
+                const res = await fetch(`${DB_BASE_URL}/products.json`);
+                const data = await res.json();
                 products = [];
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
+                if(data) {
                     Object.keys(data).forEach(key => products.push({ id: key, ...data[key] }));
                     products.reverse();
                 }
                 filterProducts();
                 renderMyListedItems();
                 if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            });
+            } catch(e) { console.log(e); }
+        }
 
-            onValue(ref(db, "users"), (snapshot) => {
+        async function fetchUsers() {
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users.json`);
+                const data = await res.json();
                 users = [];
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
+                if(data) {
                     Object.keys(data).forEach(key => users.push({ id: key, ...data[key] }));
                 }
                 if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            });
+            } catch(e) { console.log(e); }
+        }
 
-            // Handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUserPill();
+            fetchProducts();
+            fetchUsers();
+
+            setInterval(() => {
+                fetchProducts();
+                fetchUsers();
+            }, 4000);
+
             document.getElementById('userPill').onclick = () => {
                 if(!currentUser) {
                     document.getElementById('registerModal').style.display = 'flex';
@@ -375,10 +375,10 @@
                 }
             };
 
-            document.getElementById('regForm').onsubmit = (e) => {
+            document.getElementById('regForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('regSubmitBtn');
-                btn.innerText = "Registering...";
+                btn.innerText = "Saving Account...";
                 btn.disabled = true;
 
                 const userId = 'user_' + Date.now();
@@ -390,18 +390,25 @@
                     dp: tempDpBase64 || 'https://via.placeholder.com/60?text=User'
                 };
 
-                set(ref(db, 'users/' + userId), userData).then(() => {
+                try {
+                    await fetch(`${DB_BASE_URL}/users/${userId}.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify(userData)
+                    });
                     currentUser = userData;
                     localStorage.setItem('pb_current_user', JSON.stringify(userData));
                     updateUserPill();
                     document.getElementById('registerModal').style.display = 'none';
+                    alert("Account Registered Successfully! 🎉");
+                } catch(err) {
+                    alert("Registration failed: " + err.message);
+                } finally {
                     btn.innerText = "Register & Continue";
                     btn.disabled = false;
-                    alert("Account Registered Successfully! 🎉");
-                });
+                }
             };
 
-            document.getElementById('editProfileForm').onsubmit = (e) => {
+            document.getElementById('editProfileForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const updatedData = {
                     ...currentUser,
@@ -411,13 +418,17 @@
                     dp: tempDpBase64 || currentUser.dp
                 };
 
-                set(ref(db, 'users/' + currentUser.id), updatedData).then(() => {
+                try {
+                    await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify(updatedData)
+                    });
                     currentUser = updatedData;
                     localStorage.setItem('pb_current_user', JSON.stringify(updatedData));
                     updateUserPill();
                     document.getElementById('editProfileModal').style.display = 'none';
                     alert("Profile Updated!");
-                });
+                } catch(err) { alert("Error updating profile."); }
             };
 
             document.getElementById('logoutBtn').onclick = () => {
@@ -460,60 +471,48 @@
                 });
             };
 
-            document.getElementById('sellForm').onsubmit = (e) => {
+            document.getElementById('sellForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const saveBtn = document.getElementById('savePostBtn');
-                saveBtn.innerText = "Saving...";
+                saveBtn.innerText = "Saving Post...";
                 saveBtn.disabled = true;
 
                 const editId = document.getElementById('editingProdId').value;
-                if(editId) {
-                    const existingProd = products.find(p => p.id === editId);
-                    const updatedProd = {
-                        ...existingProd,
-                        title: document.getElementById('postTitle').value,
-                        price: document.getElementById('postPrice').value,
-                        condition: document.getElementById('postCondition').value,
-                        desc: document.getElementById('postDesc').value,
-                        images: uploadedImagesBase64.length > 0 ? uploadedImagesBase64 : (existingProd.images || [existingProd.image])
-                    };
-                    set(ref(db, 'products/' + editId), updatedProd).then(() => {
-                        saveBtn.innerText = "Post Item Now";
-                        saveBtn.disabled = false;
-                        document.getElementById('sellModal').style.display = 'none';
-                        alert("Product Updated!");
+                const prodId = editId || ('prod_' + Date.now());
+                const newProd = {
+                    id: prodId,
+                    title: document.getElementById('postTitle').value,
+                    price: document.getElementById('postPrice').value,
+                    condition: document.getElementById('postCondition').value,
+                    desc: document.getElementById('postDesc').value,
+                    images: uploadedImagesBase64,
+                    sellerId: currentUser.id,
+                    sellerName: currentUser.name,
+                    sellerPhone: currentUser.phone,
+                    city: currentUser.city,
+                    createdAt: Date.now()
+                };
+
+                try {
+                    await fetch(`${DB_BASE_URL}/products/${prodId}.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify(newProd)
                     });
-                } else {
-                    const newRef = push(ref(db, 'products'));
-                    const newProd = {
-                        id: newRef.key,
-                        title: document.getElementById('postTitle').value,
-                        price: document.getElementById('postPrice').value,
-                        condition: document.getElementById('postCondition').value,
-                        desc: document.getElementById('postDesc').value,
-                        images: uploadedImagesBase64,
-                        sellerId: currentUser.id,
-                        sellerName: currentUser.name,
-                        sellerPhone: currentUser.phone,
-                        city: currentUser.city,
-                        createdAt: Date.now()
-                    };
-                    set(newRef, newProd).then(() => {
-                        saveBtn.innerText = "Post Item Now";
-                        saveBtn.disabled = false;
-                        document.getElementById('sellModal').style.display = 'none';
-                        alert("Item Uploaded!");
-                    });
+                    document.getElementById('sellModal').style.display = 'none';
+                    alert("Item Posted Successfully!");
+                    fetchProducts();
+                } catch(err) { alert("Error posting item."); }
+                finally {
+                    saveBtn.innerText = "Post Item Now";
+                    saveBtn.disabled = false;
                 }
             };
 
-            // Tab Switches
             document.getElementById('tabBuyBtn').onclick = () => switchMainTab('buy');
             document.getElementById('tabSellBtn').onclick = () => switchMainTab('sell');
             document.getElementById('cityFilter').onchange = filterProducts;
             document.getElementById('searchInput').oninput = filterProducts;
 
-            // Admin Logic
             document.getElementById('logoBtn').onclick = () => {
                 logoClickCount++;
                 if(logoClickCount >= 3) {
@@ -553,12 +552,6 @@
                 document.getElementById('adminUsersTab').style.display = 'none';
                 document.getElementById('adminProductsTab').style.display = 'block';
             };
-
-            document.querySelectorAll('[data-close]').forEach(btn => {
-                btn.onclick = () => {
-                    document.getElementById(btn.getAttribute('data-close')).style.display = 'none';
-                };
-            });
         });
 
         function switchMainTab(tab) {
@@ -646,12 +639,18 @@
             });
         }
 
-        window.deleteProd = (id) => {
-            if(confirm("Delete item?")) remove(ref(db, 'products/' + id));
+        window.deleteProd = async (id) => {
+            if(confirm("Delete item?")) {
+                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                fetchProducts();
+            }
         };
 
-        window.deleteUser = (id) => {
-            if(confirm("Delete user?")) remove(ref(db, 'users/' + id));
+        window.deleteUser = async (id) => {
+            if(confirm("Delete user?")) {
+                await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
+                fetchUsers();
+            }
         };
     </script>
 </body>
