@@ -234,7 +234,7 @@
                 </div>
                 <div class="form-group">
                     <label>Photos (Select 1 to 5 Photos) *</label>
-                    <input type="file" id="postImgFiles" accept="image/*" multiple>
+                    <input type="file" id="postImgFiles" accept="image/*" multiple required>
                     <div id="previewBox" style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;"></div>
                 </div>
                 <div class="form-group"><label>Description *</label><textarea id="postDesc" rows="3" required></textarea></div>
@@ -274,6 +274,7 @@
             document.getElementById(id).style.display = 'none';
         }
 
+        // Heavy compression to prevent loading freeze
         function compressImage(file, maxWidth, quality, callback) {
             if (!file) return callback("");
             const reader = new FileReader();
@@ -334,324 +335,25 @@
             } catch(e) { console.log(e); }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            updateUserPill();
-            fetchProducts();
-            fetchUsers();
-
-            setInterval(() => {
-                fetchProducts();
-                fetchUsers();
-            }, 4000);
-
-            document.getElementById('userPill').onclick = () => {
-                if(!currentUser) {
-                    document.getElementById('registerModal').style.display = 'flex';
-                } else {
-                    document.getElementById('editName').value = currentUser.name;
-                    document.getElementById('editCity').value = currentUser.city;
-                    document.getElementById('editPhone').value = currentUser.phone;
-                    document.getElementById('editDpPreview').src = currentUser.dp || 'https://via.placeholder.com/60?text=User';
-                    tempDpBase64 = currentUser.dp || '';
-                    document.getElementById('editProfileModal').style.display = 'flex';
-                }
-            };
-
-            document.getElementById('regDpFile').onchange = (e) => {
-                if(e.target.files[0]) {
-                    compressImage(e.target.files[0], 200, 0.6, (url) => {
-                        document.getElementById('regDpPreview').src = url;
-                        tempDpBase64 = url;
-                    });
-                }
-            };
-
-            document.getElementById('editDpFile').onchange = (e) => {
-                if(e.target.files[0]) {
-                    compressImage(e.target.files[0], 200, 0.6, (url) => {
-                        document.getElementById('editDpPreview').src = url;
-                        tempDpBase64 = url;
-                    });
-                }
-            };
-
-            document.getElementById('regForm').onsubmit = async (e) => {
-                e.preventDefault();
-                const btn = document.getElementById('regSubmitBtn');
-                btn.innerText = "Saving Account...";
-                btn.disabled = true;
-
-                const userId = 'user_' + Date.now();
-                const userData = {
-                    id: userId,
-                    name: document.getElementById('regName').value,
-                    city: document.getElementById('regCity').value,
-                    phone: document.getElementById('regPhone').value,
-                    dp: tempDpBase64 || 'https://via.placeholder.com/60?text=User'
-                };
-
+        // Global Delete Functions Fixed
+        window.deleteUser = async function(id) {
+            if(confirm("KiA AAP IS USER KO DELETE KARNA CHAHTE HAIN?")) {
                 try {
-                    await fetch(`${DB_BASE_URL}/users/${userId}.json`, {
-                        method: 'PUT',
-                        body: JSON.stringify(userData)
-                    });
-                    currentUser = userData;
-                    localStorage.setItem('pb_current_user', JSON.stringify(userData));
-                    updateUserPill();
-                    document.getElementById('registerModal').style.display = 'none';
-                    alert("Account Registered Successfully! 🎉");
-                } catch(err) {
-                    alert("Registration failed: " + err.message);
-                } finally {
-                    btn.innerText = "Register & Continue";
-                    btn.disabled = false;
-                }
-            };
+                    await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
+                    alert("User Deleted!");
+                    fetchUsers();
+                } catch(e) { alert("Delete Error!"); }
+            }
+        };
 
-            document.getElementById('editProfileForm').onsubmit = async (e) => {
-                e.preventDefault();
-                const updatedData = {
-                    ...currentUser,
-                    name: document.getElementById('editName').value,
-                    city: document.getElementById('editCity').value,
-                    phone: document.getElementById('editPhone').value,
-                    dp: tempDpBase64 || currentUser.dp
-                };
-
+        window.deleteProd = async function(id) {
+            if(confirm("KiA AAP IS PRODUCT KO DELETE KARNA CHAHTE HAIN?")) {
                 try {
-                    await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
-                        method: 'PUT',
-                        body: JSON.stringify(updatedData)
-                    });
-                    currentUser = updatedData;
-                    localStorage.setItem('pb_current_user', JSON.stringify(updatedData));
-                    updateUserPill();
-                    document.getElementById('editProfileModal').style.display = 'none';
-                    alert("Profile Updated!");
-                } catch(err) { alert("Error updating profile."); }
-            };
-
-            document.getElementById('logoutBtn').onclick = () => {
-                localStorage.removeItem('pb_current_user');
-                currentUser = null;
-                updateUserPill();
-                document.getElementById('editProfileModal').style.display = 'none';
-                alert("Logged Out!");
-            };
-
-            document.getElementById('sellItemBtn').onclick = () => {
-                if(!currentUser) {
-                    alert("Pehle register karein!");
-                    document.getElementById('registerModal').style.display = 'flex';
-                } else {
-                    document.getElementById('editingProdId').value = "";
-                    document.getElementById('sellModalTitle').innerText = "Sell Item";
-                    document.getElementById('postTitle').value = "";
-                    document.getElementById('postPrice').value = "";
-                    document.getElementById('postDesc').value = "";
-                    document.getElementById('previewBox').innerHTML = "";
-                    uploadedImagesBase64 = [];
-                    document.getElementById('sellModal').style.display = 'flex';
-                }
-            };
-
-            document.getElementById('postImgFiles').onchange = (e) => {
-                const files = Array.from(e.target.files).slice(0, 5);
-                uploadedImagesBase64 = [];
-                const previewBox = document.getElementById('previewBox');
-                previewBox.innerHTML = '';
-                files.forEach(file => {
-                    compressImage(file, 500, 0.6, (url) => {
-                        uploadedImagesBase64.push(url);
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.className = 'preview-thumb';
-                        previewBox.appendChild(img);
-                    });
-                });
-            };
-
-            document.getElementById('sellForm').onsubmit = async (e) => {
-                e.preventDefault();
-                const saveBtn = document.getElementById('savePostBtn');
-                saveBtn.innerText = "Saving Post...";
-                saveBtn.disabled = true;
-
-                const editId = document.getElementById('editingProdId').value;
-                const prodId = editId || ('prod_' + Date.now());
-                const newProd = {
-                    id: prodId,
-                    title: document.getElementById('postTitle').value,
-                    price: document.getElementById('postPrice').value,
-                    condition: document.getElementById('postCondition').value,
-                    desc: document.getElementById('postDesc').value,
-                    images: uploadedImagesBase64,
-                    sellerId: currentUser.id,
-                    sellerName: currentUser.name,
-                    sellerPhone: currentUser.phone,
-                    city: currentUser.city,
-                    createdAt: Date.now()
-                };
-
-                try {
-                    await fetch(`${DB_BASE_URL}/products/${prodId}.json`, {
-                        method: 'PUT',
-                        body: JSON.stringify(newProd)
-                    });
-                    document.getElementById('sellModal').style.display = 'none';
-                    alert("Item Posted Successfully!");
+                    await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                    alert("Item Deleted!");
                     fetchProducts();
-                } catch(err) { alert("Error posting item."); }
-                finally {
-                    saveBtn.innerText = "Post Item Now";
-                    saveBtn.disabled = false;
-                }
-            };
-
-            document.getElementById('tabBuyBtn').onclick = () => switchMainTab('buy');
-            document.getElementById('tabSellBtn').onclick = () => switchMainTab('sell');
-            document.getElementById('cityFilter').onchange = filterProducts;
-            document.getElementById('searchInput').oninput = filterProducts;
-
-            document.getElementById('logoBtn').onclick = () => {
-                logoClickCount++;
-                if(logoClickCount >= 3) {
-                    logoClickCount = 0;
-                    document.getElementById('adminAuthModal').style.display = 'flex';
-                }
-            };
-
-            document.getElementById('adminLoginForm').onsubmit = (e) => {
-                e.preventDefault();
-                if(document.getElementById('adminPass').value === 'za12##id34##') {
-                    document.getElementById('adminAuthModal').style.display = 'none';
-                    document.getElementById('tabBuyContent').style.display = 'none';
-                    document.getElementById('tabSellContent').style.display = 'none';
-                    document.getElementById('adminView').style.display = 'block';
-                    loadAdminData();
-                } else {
-                    alert("Wrong Password!");
-                }
-            };
-
-            document.getElementById('closeAdminBtn').onclick = () => {
-                document.getElementById('adminView').style.display = 'none';
-                switchMainTab('buy');
-            };
-
-            document.getElementById('tabUsersBtn').onclick = () => {
-                document.getElementById('tabUsersBtn').classList.add('active');
-                document.getElementById('tabProductsBtn').classList.remove('active');
-                document.getElementById('adminUsersTab').style.display = 'block';
-                document.getElementById('adminProductsTab').style.display = 'none';
-            };
-
-            document.getElementById('tabProductsBtn').onclick = () => {
-                document.getElementById('tabProductsBtn').classList.add('active');
-                document.getElementById('tabUsersBtn').classList.remove('active');
-                document.getElementById('adminUsersTab').style.display = 'none';
-                document.getElementById('adminProductsTab').style.display = 'block';
-            };
-        });
-
-        function switchMainTab(tab) {
-            document.getElementById('tabBuyBtn').classList.toggle('active', tab === 'buy');
-            document.getElementById('tabSellBtn').classList.toggle('active', tab === 'sell');
-            document.getElementById('tabBuyContent').style.display = tab === 'buy' ? 'block' : 'none';
-            document.getElementById('tabSellContent').style.display = tab === 'sell' ? 'block' : 'none';
-            if(tab === 'sell') renderMyListedItems();
-        }
-
-        function filterProducts() {
-            const city = document.getElementById('cityFilter').value;
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const grid = document.getElementById('productGrid');
-            grid.innerHTML = '';
-
-            const filtered = products.filter(p => {
-                const matchCity = (city === 'ALL' || p.city === city);
-                const matchSearch = (p.title && p.title.toLowerCase().includes(search));
-                return matchCity && matchSearch;
-            });
-
-            document.getElementById('emptyState').style.display = filtered.length === 0 ? 'block' : 'none';
-            filtered.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
-                const cleanPhone = p.sellerPhone ? p.sellerPhone.replace(/[^0-9]/g, '') : '';
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <img src="${img}" class="card-img">
-                        <div class="card-body">
-                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
-                            <div class="card-title">${p.title}</div>
-                            <div class="card-badge">📍 ${p.city} • ${p.condition}</div>
-                            <a href="https://wa.me/92${cleanPhone.slice(-10)}" target="_blank" class="btn-whatsapp">💬 Chat on WhatsApp</a>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderMyListedItems() {
-            const grid = document.getElementById('myItemsGrid');
-            if(!currentUser) return grid.innerHTML = '';
-            const myProds = products.filter(p => p.sellerId === currentUser.id);
-            grid.innerHTML = '';
-            document.getElementById('myEmptyState').style.display = myProds.length === 0 ? 'block' : 'none';
-
-            myProds.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <img src="${img}" class="card-img">
-                        <div class="card-body">
-                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
-                            <div class="card-title">${p.title}</div>
-                            <div class="my-item-actions">
-                                <button class="btn-delete" onclick="deleteProd('${p.id}')">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function loadAdminData() {
-            const uList = document.getElementById('adminUsersList');
-            uList.innerHTML = '';
-            users.forEach(u => {
-                uList.innerHTML += `<tr>
-                    <td><img src="${u.dp || 'https://via.placeholder.com/60'}" style="width:30px;height:30px;border-radius:50%;"></td>
-                    <td>${u.name}</td><td>${u.phone}</td><td>${u.city}</td>
-                    <td><button class="btn-delete" onclick="deleteUser('${u.id}')">Delete</button></td>
-                </tr>`;
-            });
-
-            const pList = document.getElementById('adminProductsList');
-            pList.innerHTML = '';
-            products.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/60');
-                pList.innerHTML += `<tr>
-                    <td><img src="${img}" style="width:40px;height:40px;"></td>
-                    <td>${p.title}</td><td>Rs ${p.price}</td><td>${p.sellerName || 'N/A'}</td>
-                    <td><button class="btn-delete" onclick="deleteProd('${p.id}')">Delete</button></td>
-                </tr>`;
-            });
-        }
-
-        window.deleteProd = async (id) => {
-            if(confirm("Delete item?")) {
-                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
-                fetchProducts();
+                } catch(e) { alert("Delete Error!"); }
             }
         };
 
-        window.deleteUser = async (id) => {
-            if(confirm("Delete user?")) {
-                await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
-                fetchUsers();
-            }
-        };
-    </script>
-</body>
-</html>
+        document.addEventLis
