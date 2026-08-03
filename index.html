@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pakistani Bazaar - Buy & Sell</title>
+    
+    <!-- PWA Install Manifest Links -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#002f34">
+
     <style>
         :root {
             --primary: #002f34;
@@ -21,8 +26,9 @@
         body { background-color: var(--bg); color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 70px; }
 
         header { background-color: var(--primary); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        
         .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 22px; font-weight: 800; color: var(--accent); text-decoration: none; cursor: pointer; user-select: none; }
+        .logo { font-size: 20px; font-weight: 800; color: var(--accent); text-decoration: none; cursor: pointer; user-select: none; }
         .logo span { color: #ffffff; }
 
         .user-pill { background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 20px; font-size: 13px; border: 1px solid rgba(255,255,255,0.3); color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; }
@@ -54,8 +60,15 @@
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; padding: 15px; }
         .modal-content { background: white; border-radius: 10px; width: 100%; max-width: 500px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
-        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 15px; color: var(--primary); display: flex; justify-content: space-between; }
-        .close-modal { cursor: pointer; font-size: 20px; color: #aaa; }
+        
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 15px; color: var(--primary); padding-right: 25px; }
+        .close-modal { position: absolute; top: 15px; right: 18px; cursor: pointer; font-size: 24px; font-weight: bold; color: #888; line-height: 1; }
+        .close-modal:hover { color: var(--danger); }
+
+        .auth-toggle-btns { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .auth-tab { flex: 1; padding: 8px; text-align: center; background: #eee; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; color: var(--text-dark); }
+        .auth-tab.active { background: var(--primary); color: white; }
+
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 14px; }
@@ -151,14 +164,27 @@
         <div class="nav-tab" id="tabSellBtn" onclick="switchMainTab('sell')"><span>🏷️</span><span>SELLING</span></div>
     </nav>
 
-    <!-- Register Modal -->
-    <div class="modal" id="registerModal">
+    <!-- Combined Auth Modal (Login & Sign Up) -->
+    <div class="modal" id="authModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Account Register Karein</span>
-                <span class="close-modal" onclick="closeModal('registerModal')">&times;</span>
+            <span class="close-modal" onclick="closeModal('authModal')">&times;</span>
+            
+            <div class="auth-toggle-btns">
+                <div class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">🔑 LOGIN</div>
+                <div class="auth-tab" id="tabRegisterBtn" onclick="switchAuthTab('register')">📝 SIGN UP</div>
             </div>
-            <form id="regForm" onsubmit="handleRegister(event)">
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Registered Phone Number *</label>
+                    <input type="tel" id="loginPhone" placeholder="03001234567" required>
+                </div>
+                <button type="submit" class="btn-submit" id="loginSubmitBtn">Login To Account</button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="regForm" onsubmit="handleRegister(event)" style="display: none;">
                 <div class="dp-preview-box">
                     <img id="regDpPreview" class="dp-preview-img" src="https://via.placeholder.com/60?text=User">
                     <div>
@@ -177,7 +203,7 @@
                     </select>
                 </div>
                 <div class="form-group"><label>WhatsApp Number *</label><input type="tel" id="regPhone" placeholder="03001234567" required></div>
-                <button type="submit" class="btn-submit" id="regSubmitBtn">Register & Continue</button>
+                <button type="submit" class="btn-submit" id="regSubmitBtn">Create New Account</button>
             </form>
         </div>
     </div>
@@ -185,10 +211,8 @@
     <!-- Edit Profile Modal -->
     <div class="modal" id="editProfileModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Edit Profile</span>
-                <span class="close-modal" onclick="closeModal('editProfileModal')">&times;</span>
-            </div>
+            <span class="close-modal" onclick="closeModal('editProfileModal')">&times;</span>
+            <div class="modal-header">Edit Profile</div>
             <form id="editProfileForm" onsubmit="handleEditProfile(event)">
                 <div class="dp-preview-box">
                     <img id="editDpPreview" class="dp-preview-img" src="https://via.placeholder.com/60?text=User">
@@ -205,7 +229,7 @@
                         <option value="Islamabad">Islamabad</option><option value="Rawalpindi">Rawalpindi</option>
                     </select>
                 </div>
-                <div class="form-group"><label>WhatsApp Number *</label><input type="tel" id="editPhone" required></div>
+                <div class="form-group"><label>WhatsApp Number (Locked)</label><input type="tel" id="editPhone" readonly style="background:#eee; cursor:not-allowed;"></div>
                 <button type="submit" class="btn-submit">Save Changes</button>
             </form>
             <button class="btn-logout" onclick="handleLogout()">🚪 Logout</button>
@@ -215,10 +239,8 @@
     <!-- Sell Modal -->
     <div class="modal" id="sellModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Sell Item</span>
-                <span class="close-modal" onclick="closeModal('sellModal')">&times;</span>
-            </div>
+            <span class="close-modal" onclick="closeModal('sellModal')">&times;</span>
+            <div class="modal-header">Sell Item</div>
             <form id="sellForm" onsubmit="handlePostItem(event)">
                 <div class="form-group"><label>Title *</label><input type="text" id="postTitle" required></div>
                 <div class="form-group"><label>Price (PKR) *</label><input type="number" id="postPrice" required></div>
@@ -242,10 +264,8 @@
     <!-- Admin Auth Modal -->
     <div class="modal" id="adminAuthModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Secret Admin Login</span>
-                <span class="close-modal" onclick="closeModal('adminAuthModal')">&times;</span>
-            </div>
+            <span class="close-modal" onclick="closeModal('adminAuthModal')">&times;</span>
+            <div class="modal-header">Secret Admin Login</div>
             <form onsubmit="handleAdminLogin(event)">
                 <div class="form-group">
                     <label>Admin Password</label>
@@ -268,6 +288,10 @@
 
         function closeModal(id) {
             document.getElementById(id).style.display = 'none';
+        }
+
+        function cleanPhoneNumber(phone) {
+            return phone ? phone.replace(/[^0-9]/g, '') : '';
         }
 
         function compressImage(file, maxWidth, quality, callback) {
@@ -299,8 +323,20 @@
                 const dp = currentUser.dp || 'https://via.placeholder.com/60?text=User';
                 pill.innerHTML = `<img src="${dp}" class="user-dp-icon"> <span>${currentUser.name}</span>`;
             } else {
-                pill.innerHTML = `<span>Guest (Login)</span>`;
+                pill.innerHTML = `<span>Guest (Login/Signup)</span>`;
             }
+        }
+
+        async function verifyCurrentUserExists() {
+            if(!currentUser) return;
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`);
+                const data = await res.json();
+                if(!data) {
+                    alert("Aap ka account delete kar diya gaya hai.");
+                    handleLogout();
+                }
+            } catch(e) {}
         }
 
         async function fetchProducts() {
@@ -315,7 +351,7 @@
                 filterProducts();
                 renderMyListedItems();
                 if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            } catch(e) { console.log(e); }
+            } catch(e) {}
         }
 
         async function fetchUsers() {
@@ -326,13 +362,22 @@
                 if(data) {
                     Object.keys(data).forEach(key => users.push({ id: key, ...data[key] }));
                 }
+                verifyCurrentUserExists();
                 if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            } catch(e) { console.log(e); }
+            } catch(e) {}
+        }
+
+        function switchAuthTab(type) {
+            document.getElementById('tabLoginBtn').classList.toggle('active', type === 'login');
+            document.getElementById('tabRegisterBtn').classList.toggle('active', type === 'register');
+            document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
+            document.getElementById('regForm').style.display = type === 'register' ? 'block' : 'none';
         }
 
         function openUserProfileModal() {
             if(!currentUser) {
-                document.getElementById('registerModal').style.display = 'flex';
+                switchAuthTab('login');
+                document.getElementById('authModal').style.display = 'flex';
             } else {
                 document.getElementById('editName').value = currentUser.name;
                 document.getElementById('editCity').value = currentUser.city;
@@ -345,4 +390,353 @@
 
         function handleDpUpload(e, previewId) {
             if(e.target.files[0]) {
-             
+                compressImage(e.target.files[0], 120, 0.4, (url) => {
+                    document.getElementById(previewId).src = url;
+                    tempDpBase64 = url;
+                });
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const inputPhone = cleanPhoneNumber(document.getElementById('loginPhone').value);
+            const btn = document.getElementById('loginSubmitBtn');
+            btn.innerText = "Checking...";
+            btn.disabled = true;
+
+            await fetchUsers();
+
+            const existingUser = users.find(u => cleanPhoneNumber(u.phone) === inputPhone);
+
+            if(existingUser) {
+                currentUser = existingUser;
+                localStorage.setItem('pb_current_user', JSON.stringify(existingUser));
+                updateUserPill();
+                renderMyListedItems();
+                document.getElementById('authModal').style.display = 'none';
+                alert(`Welcome back, ${existingUser.name}!`);
+            } else {
+                alert("Yeh phone number registered nahi hai! Pehle Sign Up tab par ja kar account banayein.");
+                switchAuthTab('register');
+            }
+
+            btn.innerText = "Login To Account";
+            btn.disabled = false;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const rawPhone = document.getElementById('regPhone').value;
+            const cleanPhone = cleanPhoneNumber(rawPhone);
+            const btn = document.getElementById('regSubmitBtn');
+
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            await fetchUsers();
+
+            const alreadyExists = users.some(u => cleanPhoneNumber(u.phone) === cleanPhone);
+
+            if(alreadyExists) {
+                alert("⚠️ Yeh Phone Number pehle se registered hai!\n\nKripya LOGIN tab par ja kar apna number daal kar account open karein.");
+                switchAuthTab('login');
+                document.getElementById('loginPhone').value = rawPhone;
+                btn.innerText = "Create New Account";
+                btn.disabled = false;
+                return;
+            }
+
+            btn.innerText = "Saving Account...";
+
+            const userId = 'user_' + Date.now();
+            const userData = {
+                id: userId,
+                name: document.getElementById('regName').value,
+                city: document.getElementById('regCity').value,
+                phone: rawPhone,
+                dp: tempDpBase64 || 'https://via.placeholder.com/60?text=User'
+            };
+
+            try {
+                await fetch(`${DB_BASE_URL}/users/${userId}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(userData)
+                });
+                currentUser = userData;
+                localStorage.setItem('pb_current_user', JSON.stringify(userData));
+                updateUserPill();
+                document.getElementById('authModal').style.display = 'none';
+                alert("Account Registered & Logged in successfully!");
+                fetchUsers();
+            } catch(err) {
+                alert("Registration failed.");
+            } finally {
+                btn.innerText = "Create New Account";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleEditProfile(e) {
+            e.preventDefault();
+            const updatedData = {
+                ...currentUser,
+                name: document.getElementById('editName').value,
+                city: document.getElementById('editCity').value,
+                dp: tempDpBase64 || currentUser.dp
+            };
+
+            try {
+                await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updatedData)
+                });
+                currentUser = updatedData;
+                localStorage.setItem('pb_current_user', JSON.stringify(updatedData));
+                updateUserPill();
+                document.getElementById('editProfileModal').style.display = 'none';
+                alert("Profile Updated!");
+                fetchUsers();
+            } catch(err) { alert("Error updating profile."); }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('pb_current_user');
+            currentUser = null;
+            updateUserPill();
+            document.getElementById('editProfileModal').style.display = 'none';
+            renderMyListedItems();
+        }
+
+        function openSellModal() {
+            if(!currentUser) {
+                alert("Item lagane ke liye pehle Login / Register karein!");
+                switchAuthTab('login');
+                document.getElementById('authModal').style.display = 'flex';
+            } else {
+                document.getElementById('postTitle').value = "";
+                document.getElementById('postPrice').value = "";
+                document.getElementById('postDesc').value = "";
+                document.getElementById('previewBox').innerHTML = "";
+                uploadedImagesBase64 = [];
+                document.getElementById('sellModal').style.display = 'flex';
+            }
+        }
+
+        function handleProductImgUpload(e) {
+            const files = Array.from(e.target.files).slice(0, 3);
+            uploadedImagesBase64 = [];
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = '';
+            files.forEach(file => {
+                compressImage(file, 250, 0.4, (url) => {
+                    uploadedImagesBase64.push(url);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.width = '40px';
+                    img.style.height = '40px';
+                    img.style.objectFit = 'cover';
+                    previewBox.appendChild(img);
+                });
+            });
+        }
+
+        async function handlePostItem(e) {
+            e.preventDefault();
+            const saveBtn = document.getElementById('savePostBtn');
+            saveBtn.innerText = "Posting...";
+            saveBtn.disabled = true;
+
+            const prodId = 'prod_' + Date.now();
+            const newProd = {
+                id: prodId,
+                title: document.getElementById('postTitle').value,
+                price: document.getElementById('postPrice').value,
+                condition: document.getElementById('postCondition').value,
+                desc: document.getElementById('postDesc').value,
+                images: uploadedImagesBase64.length > 0 ? uploadedImagesBase64 : ['https://via.placeholder.com/200'],
+                sellerId: currentUser.id,
+                sellerName: currentUser.name,
+                sellerPhone: currentUser.phone,
+                city: currentUser.city,
+                createdAt: Date.now()
+            };
+
+            try {
+                await fetch(`${DB_BASE_URL}/products/${prodId}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(newProd)
+                });
+                document.getElementById('sellModal').style.display = 'none';
+                alert("Item Posted!");
+                fetchProducts();
+            } catch(err) { alert("Error posting item."); }
+            finally {
+                saveBtn.innerText = "Post Item Now";
+                saveBtn.disabled = false;
+            }
+        }
+
+        function switchMainTab(tab) {
+            document.getElementById('tabBuyBtn').classList.toggle('active', tab === 'buy');
+            document.getElementById('tabSellBtn').classList.toggle('active', tab === 'sell');
+            document.getElementById('tabBuyContent').style.display = tab === 'buy' ? 'block' : 'none';
+            document.getElementById('tabSellContent').style.display = tab === 'sell' ? 'block' : 'none';
+            if(tab === 'sell') renderMyListedItems();
+        }
+
+        function filterProducts() {
+            const city = document.getElementById('cityFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+
+            const filtered = products.filter(p => {
+                const matchCity = (city === 'ALL' || p.city === city);
+                const matchSearch = (p.title && p.title.toLowerCase().includes(search));
+                return matchCity && matchSearch;
+            });
+
+            document.getElementById('emptyState').style.display = filtered.length === 0 ? 'block' : 'none';
+            filtered.forEach(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
+                const cleanPhone = cleanPhoneNumber(p.sellerPhone);
+                const formattedPhone = '92' + cleanPhone.slice(-10);
+                
+                const msg = encodeURIComponent(`Assalam-o-Alaikum! Mujhe aap ki yeh product "${p.title}" (Rs ${Number(p.price).toLocaleString()}) pasand aayi hai, kya yeh abhi available hai?`);
+                const whatsappUrl = `https://wa.me/${formattedPhone}?text=${msg}`;
+
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <img src="${img}" class="card-img">
+                        <div class="card-body">
+                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
+                            <div class="card-title">${p.title}</div>
+                            <div class="card-badge">📍 ${p.city} • ${p.condition}</div>
+                            <a href="${whatsappUrl}" target="_blank" class="btn-whatsapp">💬 Chat on WhatsApp</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderMyListedItems() {
+            const grid = document.getElementById('myItemsGrid');
+            if(!currentUser) return grid.innerHTML = '';
+            const myProds = products.filter(p => p.sellerId === currentUser.id);
+            grid.innerHTML = '';
+            document.getElementById('myEmptyState').style.display = myProds.length === 0 ? 'block' : 'none';
+
+            myProds.forEach(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <img src="${img}" class="card-img">
+                        <div class="card-body">
+                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
+                            <div class="card-title">${p.title}</div>
+                            <div style="margin-top:10px;">
+                                <button class="btn-delete" onclick="removeProduct('${p.id}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function handleLogoClick() {
+            logoClickCount++;
+            if(logoClickCount >= 3) {
+                logoClickCount = 0;
+                document.getElementById('adminAuthModal').style.display = 'flex';
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            if(document.getElementById('adminPass').value === 'za12##id34##') {
+                document.getElementById('adminAuthModal').style.display = 'none';
+                document.getElementById('tabBuyContent').style.display = 'none';
+                document.getElementById('tabSellContent').style.display = 'none';
+                document.getElementById('adminView').style.display = 'block';
+                loadAdminData();
+            } else {
+                alert("Wrong Password!");
+            }
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminView').style.display = 'none';
+            switchMainTab('buy');
+        }
+
+        function switchAdminTab(type) {
+            document.getElementById('tabUsersBtn').classList.toggle('active', type === 'users');
+            document.getElementById('tabProductsBtn').classList.toggle('active', type === 'products');
+            document.getElementById('adminUsersTab').style.display = type === 'users' ? 'block' : 'none';
+            document.getElementById('adminProductsTab').style.display = type === 'products' ? 'block' : 'none';
+        }
+
+        function loadAdminData() {
+            const uList = document.getElementById('adminUsersList');
+            uList.innerHTML = '';
+            users.forEach(u => {
+                uList.innerHTML += `<tr>
+                    <td><b>${u.name}</b></td>
+                    <td>${u.phone}</td>
+                    <td>${u.city}</td>
+                    <td><button class="btn-delete" onclick="removeUserAccount('${u.id}')">Delete</button></td>
+                </tr>`;
+            });
+
+            const pList = document.getElementById('adminProductsList');
+            pList.innerHTML = '';
+            products.forEach(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/60');
+                pList.innerHTML += `<tr>
+                    <td><img src="${img}" style="width:35px;height:35px;object-fit:cover;border-radius:4px;"></td>
+                    <td>${p.title}</td>
+                    <td>Rs ${p.price}</td>
+                    <td><button class="btn-delete" onclick="removeProduct('${p.id}')">Delete</button></td>
+                </tr>`;
+            });
+        }
+
+        async function removeUserAccount(id) {
+            if(confirm("Delete this user permanently?")) {
+                users = users.filter(u => u.id !== id);
+                loadAdminData();
+                try {
+                    await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
+                } catch(e) { fetchUsers(); }
+            }
+        }
+
+        async function removeProduct(id) {
+            if(confirm("Delete this product?")) {
+                products = products.filter(p => p.id !== id);
+                filterProducts();
+                renderMyListedItems();
+                loadAdminData();
+                try {
+                    await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                } catch(e) { fetchProducts(); }
+            }
+        }
+
+        window.onload = () => {
+            updateUserPill();
+            fetchProducts();
+            fetchUsers();
+
+            setInterval(() => {
+                verifyCurrentUserExists();
+            }, 3000);
+
+            // Register Service Worker for PWA / Install
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+        };
+    </script>
+</body>
+</html>
