@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistani Bazaar - Buy & Sell</title>
+    <style>
+        :root {
+            --primary: #002f34;
+            --accent: #23e5db;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-dark: #002f34;
+            --text-muted: #6c757d;
+            --danger: #ff4d4f;
+            --success: #25d366;
+            --border-color: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 70px; }
+
+        header { background-color: var(--primary); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 22px; font-weight: 800; color: var(--accent); text-decoration: none; cursor: pointer; user-select: none; }
+        .logo span { color: #ffffff; }
+
+        .user-pill { background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 20px; font-size: 13px; border: 1px solid rgba(255,255,255,0.3); color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .user-pill:hover { background: rgba(255,255,255,0.25); }
+        .user-dp-icon { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent); }
+
+        .search-section { background: var(--primary); padding: 15px 20px 20px; border-bottom: 3px solid var(--accent); }
+        .search-box { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; }
+        .search-box select { padding: 10px; border-radius: 6px; border: none; font-size: 14px; outline: none; background: #fff; font-weight: 600; color: var(--primary); }
+        .search-box input { flex: 1; padding: 10px 15px; border-radius: 6px; border: none; font-size: 14px; outline: none; min-width: 180px; }
+
+        main { max-width: 1200px; margin: 20px auto; padding: 0 15px; flex: 1; width: 100%; }
+        .section-title { font-size: 18px; margin-bottom: 15px; color: var(--primary); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Grid & Cards */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .product-card { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; cursor: pointer; position: relative; }
+        .product-card:hover { transform: translateY(-3px); }
+        .card-img { width: 100%; height: 160px; object-fit: cover; background: #f0f0f0; }
+        .card-body { padding: 12px; display: flex; flex-direction: column; flex: 1; }
+        .card-price { font-size: 17px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .card-title { font-size: 14px; color: #333; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-badge { align-self: flex-start; background: #e6f7ff; color: #1890ff; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-bottom: 10px; }
+        .btn-whatsapp { background: var(--success); color: white; border: none; padding: 8px; border-radius: 5px; font-weight: 600; font-size: 13px; width: 100%; margin-top: auto; cursor: pointer; }
+
+        /* Action Buttons */
+        .my-item-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-edit { flex: 1; background: #1890ff; color: white; border: none; padding: 7px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; }
+        .btn-delete { flex: 1; background: var(--danger); color: white; border: none; padding: 7px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; }
+
+        /* Bottom Navigation Tabs */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-content: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .nav-tab { flex: 1; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .nav-tab.active { color: var(--primary); }
+        .nav-tab span.icon { font-size: 18px; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; padding: 15px; }
+        .modal-content { background: white; border-radius: 10px; width: 100%; max-width: 500px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 15px; color: var(--primary); display: flex; justify-content: space-between; }
+        .close-modal { cursor: pointer; font-size: 20px; color: #aaa; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 14px; }
+        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        .btn-logout { background: var(--danger); color: white; border: none; width: 100%; padding: 10px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-top: 10px; }
+
+        .btn-add-item { background: var(--primary); color: white; border: 2px solid var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .dp-preview-box { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; background: #f0f4f8; padding: 10px; border-radius: 8px; }
+        .dp-preview-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: #fff; }
+
+        /* Admin Dashboard Styles */
+        .admin-view { display: none; background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; }
+        .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .admin-tab { padding: 8px 16px; background: #eee; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .admin-tab.active { background: var(--primary); color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; overflow-x: auto; display: block; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; min-width: 80px; }
+        th { background: #fafafa; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <!-- 3 Clicks on Logo triggers Admin Modal -->
+            <div class="logo" id="logoAdminTrigger">Pakistani<span>Bazaar</span></div>
+            <div id="userPill" class="user-pill" onclick="handleProfilePillClick()">
+                <span>Guest</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- BUY TAB CONTENT -->
+    <div id="tabBuyContent">
+        <div class="search-section">
+            <div class="search-box">
+                <select id="cityFilter" onchange="filterProducts()">
+                    <option value="ALL">📍 All Pakistan</option>
+                    <option value="Lahore">Lahore</option>
+                    <option value="Karachi">Karachi</option>
+                    <option value="Islamabad">Islamabad</option>
+                    <option value="Rawalpindi">Rawalpindi</option>
+                    <option value="Faisalabad">Faisalabad</option>
+                    <option value="Multan">Multan</option>
+                    <option value="Peshawar">Peshawar</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="Search mobile, clothes, bikes..." oninput="filterProducts()">
+            </div>
+        </div>
+
+        <main>
+            <div class="section-title">
+                <span id="gridHeadingText">Fresh Items For Sale</span>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <h3>Koi product nahi mila!</h3>
+            </div>
+        </main>
+    </div>
+
+    <!-- SELL TAB CONTENT -->
+    <div id="tabSellContent" style="display: none;">
+        <main style="margin-top:20px;">
+            <button class="btn-add-item" onclick="checkAuthAndSell()">➕ SELL A NEW ITEM</button>
+            
+            <div class="section-title">
+                <span>📦 My Listed Items (Apne Lagaye Hue Items)</span>
+            </div>
+            <div class="product-grid" id="myItemsGrid"></div>
+            <div id="myEmptyState" class="empty-state" style="display: none;">
+                <h3>Aap ne abhi tak koi item lagaya nahi hai!</h3>
+                <p>Uper wale button par click karke pehla item sell karein.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- ADMIN VIEW PANEL -->
+    <main id="adminView" class="admin-view">
+        <div class="section-title">
+            <span>👑 Admin Dashboard</span>
+            <button class="btn-delete" style="padding: 5px 10px; flex:none;" onclick="closeAdminPanel()">Close Admin</button>
+        </div>
+        
+        <div class="admin-nav">
+            <div class="admin-tab active" id="tabUsers" onclick="switchAdminTab('users')">Registered Users</div>
+            <div class="admin-tab" id="tabProducts" onclick="switchAdminTab('products')">All Listed Products</div>
+        </div>
+
+        <div id="adminUsersTab">
+            <table>
+                <thead>
+                    <tr><th>DP</th><th>Name</th><th>Phone</th><th>City</th><th>Action</th></tr>
+                </thead>
+                <tbody id="adminUsersList"></tbody>
+            </table>
+        </div>
+
+        <div id="adminProductsTab" style="display: none;">
+            <table>
+                <thead>
+                    <tr><th>Photo</th><th>Title</th><th>Price</th><th>Seller</th><th>Action</th></tr>
+                </thead>
+                <tbody id="adminProductsList"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- BOTTOM NAVIGATION (2 TABS) -->
+    <nav class="bottom-nav" id="bottomNavBar">
+        <div class="nav-tab active" id="tabBuyBtn" onclick="switchMainTab('buy')">
+            <span class="icon">🛒</span>
+            <span>BUYING</span>
+        </div>
+        <div class="nav-tab" id="tabSellBtn" onclick="switchMainTab('sell')">
+            <span class="icon">🏷️</span>
+            <span>SELLING</span>
+        </div>
+    </nav>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Account Register Karein</span>
+                <span class="close-modal" onclick="closeModal('registerModal')">&times;</span>
+            </div>
+            <form onsubmit="handleRegister(event)">
+                <div class="dp-preview-box">
+                    <img id="regDpPreview" class="dp-preview-img" src="https://via.placeholder.com/60?text=User">
+                    <div>
+                        <label style="font-size:11px; font-weight:700;">Profile DP (Optional)</label>
+                        <input type="file" id="regDpFile" accept="image/*" onchange="previewUserDp(event, 'regDpPreview')">
+                    </div>
+                </div>
+                <div class="form-group"><label>Aap Ka Naam *</label><input type="text" id="regName" placeholder="e.g. Zaid Awan" required></div>
+                <div class="form-group">
+                    <label>City *</label>
+                    <select id="regCity" required>
+                        <option value="Lahore">Lahore</option><option value="Karachi">Karachi</option>
+                        <option value="Islamabad">Islamabad</option><option value="Rawalpindi">Rawalpindi</option>
+                        <option value="Faisalabad">Faisalabad</option><option value="Multan">Multan</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>WhatsApp Number *</label><input type="tel" id="regPhone" placeholder="03001234567" required></div>
+                <button type="submit" class="btn-submit">Register & Continue</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal with LOGOUT option -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Edit Profile & Account</span>
+                <span class="close-modal" onclick="closeModal('editProfileModal')">&times;</span>
+            </div>
+            <form onsubmit="handleUpdateProfile(event)">
+                <div class="dp-preview-box">
+                    <img id="editDpPreview" class="dp-preview-img" src="https://via.placeholder.com/60?text=User">
+                    <div>
+                        <label style="font-size:11px; font-weight:700;">Change DP Photo</label>
+                        <input type="file" id="editDpFile" accept="image/*" onchange="previewUserDp(event, 'editDpPreview')">
+                    </div>
+                </div>
+                <div class="form-group"><label>Full Name *</label><input type="text" id="editName" required></div>
+                <div class="form-group">
+                    <label>City *</label>
+                    <select id="editCity" required>
+                        <option value="Lahore">Lahore</option><option value="Karachi">Karachi</option>
+                        <option value="Islamabad">Islamabad</option><option value="Rawalpindi">Rawalpindi</option>
+                        <option value="Faisalabad">Faisalabad</option><option value="Multan">Multan</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>WhatsApp Phone Number *</label><input type="tel" id="editPhone" required></div>
+                <button type="submit" class="btn-submit">Save Profile Changes</button>
+            </form>
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+            <button class="btn-logout" onclick="handleLogout()">🚪 Logout (Account Se Niklein)</button>
+        </div>
+    </div>
+
+    <!-- Sell / Edit Item Modal -->
+    <div class="modal" id="sellModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="sellModalTitle">Sell Item</span>
+                <span class="close-modal" onclick="closeModal('sellModal')">&times;</span>
+            </div>
+            <form onsubmit="handlePostOrUpdateProduct(event)">
+                <input type="hidden" id="editingProdId" value="">
+                <div class="form-group"><label>Title *</label><input type="text" id="postTitle" required></div>
+                <div class="form-group"><label>Price (PKR) *</label><input type="number" id="postPrice" required></div>
+                <div class="form-group">
+                    <label>Condition *</label>
+                    <select id="postCondition" required>
+                        <option value="Used">Used</option><option value="Brand New">Brand New</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Photos (Max 5) *</label>
+                    <input type="file" id="postImgFiles" accept="image/*" multiple onchange="handleMultipleImages(event)">
+                    <div id="previewBox" style="display:flex; gap:5px; margin-top:5px; flex-wrap:wrap;"></div>
+                </div>
+                <div class="form-group"><label>Description *</label><textarea id="postDesc" rows="3" required></textarea></div>
+                <button type="submit" class="btn-submit" id="savePostBtn">Post Item Now</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Admin Auth Modal -->
+    <div class="modal" id="adminAuthModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Secret Admin Login</span>
+                <span class="close-modal" onclick="closeModal('adminAuthModal')">&times;</span>
+            </div>
+            <form onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn-submit">Login Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULE SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        // Aapki Firebase Keys Integrate Ho Gayi Hain
+        const firebaseConfig = {
+            apiKey: "AIzaSyDekG6YIGsI3Yp6ZHrg__cyaAGcvK0QFzQ",
+            authDomain: "pakistani-bazaar-za.firebaseapp.com",
+            projectId: "pakistani-bazaar-za",
+            storageBucket: "pakistani-bazaar-za.firebasestorage.app",
+            messagingSenderId: "114513006163",
+            appId: "1:114513006163:web:c83ec48dbd9cfed84040a6",
+            databaseURL: "https://pakistani-bazaar-za-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Global Variables Window scope ke liye
+        window.uploadedImagesBase64 = [];
+        window.tempDpBase64 = "";
+        window.logoClickCount = 0;
+
+        window.products = [];
+        window.users = [];
+        window.currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
+
+        // Sync Data Realtime from Firebase
+        document.addEventListener('DOMContentLoaded', () => {
+            window.updateUserPill();
+
+            // Realtime Listen Products
+            onValue(ref(db, "products"), (snapshot) => {
+                window.products = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    Object.keys(data).forEach(key => {
+                        window.products.push({ id: key, ...data[key] });
+                    });
+                    window.products.reverse(); // Latest items first
+                }
+                window.filterProducts();
+                window.renderMyListedItems();
+                if (document.getElementById('adminView').style.display === 'block') {
+                    window.loadAdminData();
+                }
+            });
+
+            // Realtime Listen Users
+            onValue(ref(db, "users"), (snapshot) => {
+                window.users = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    Object.keys(data).forEach(key => {
+                        window.users.push({ firebaseId: key, ...data[key] });
+                    });
+                }
+                if (document.getElementById('adminView').style.display === 'block') {
+                    window.loadAdminData();
+                }
+            });
+
+            // Secret 3 Taps on Logo for Admin
+            document.getElementById('logoAdminTrigger').addEventListener('click', () => {
+                window.logoClickCount++;
+                if (window.logoClickCount >= 3) {
+                    window.logoClickCount = 0;
+                    window.openModal('adminAuthModal');
+                }
+                setTimeout(() => { window.logoClickCount = 0; }, 1200);
+            });
+        });
+
+        window.switchMainTab = function(tab) {
+            const buyTab = document.getElementById('tabBuyContent');
+            const sellTab = document.getElementById('tabSellContent');
+            const buyBtn = document.getElementById('tabBuyBtn');
+            const sellBtn = document.getElementById('tabSellBtn');
+
+            document.getElementById('adminView').style.display = 'none';
+
+            if (tab === 'buy') {
+                buyTab.style.display = 'block';
+                sellTab.style.display = 'none';
+                buyBtn.classList.add('active');
+                sellBtn.classList.remove('active');
+                window.filterProducts();
+            } else {
+                buyTab.style.display = 'none';
+                sellTab.style.display = 'block';
+                sellBtn.classList.add('active');
+                buyBtn.classList.remove('active');
+                window.renderMyListedItems();
+            }
+        }
+
+        window.updateUserPill = function() {
+            const pillContainer = document.getElementById('userPill');
+            if (window.currentUser) {
+                const dpSrc = window.currentUser.dp || 'https://via.placeholder.com/26?text=U';
+                pillContainer.innerHTML = `
+                    <img src="${dpSrc}" class="user-dp-icon" alt="DP">
+                    <span>${window.currentUser.name} ✏️</span>
+                `;
+            } else {
+                pillContainer.innerHTML = `<span>👤 Guest (Register)</span>`;
+            }
+        }
+
+        window.handleProfilePillClick = function() {
+            if (!window.currentUser) {
+                window.openModal('registerModal');
+            } else {
+                document.getElementById('editName').value = window.currentUser.name;
+                document.getElementById('editCity').value = window.currentUser.city;
+                document.getElementById('editPhone').value = window.currentUser.phone;
+                document.getElementById('editDpPreview').src = window.currentUser.dp || 'https://via.placeholder.com/60?text=User';
+                window.tempDpBase64 = window.currentUser.dp || "";
+                window.openModal('editProfileModal');
+            }
+        }
+
+        window.handleLogout = function() {
+            if (confirm("Kya aap account logout karna chahte hain?")) {
+                window.currentUser = null;
+                localStorage.removeItem('pb_current_user');
+                window.updateUserPill();
+                window.closeModal('editProfileModal');
+                window.switchMainTab('buy');
+                alert("Aap Logout ho chuke hain.");
+            }
+        }
+
+        window.previewUserDp = function(e, targetId) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    window.tempDpBase64 = ev.target.result;
+                    document.getElementById(targetId).src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.handleRegister = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const city = document.getElementById('regCity').value;
+            const phone = document.getElementById('regPhone').value.trim();
+
+            let user = { name, city, phone, dp: window.tempDpBase64 };
+            
+            // Save User to Firebase Realtime Database
+            push(ref(db, "users"), user).then(() => {
+                window.currentUser = user;
+                localStorage.setItem('pb_current_user', JSON.stringify(window.currentUser));
+
+                window.tempDpBase64 = "";
+                window.updateUserPill();
+                window.closeModal('registerModal');
+                alert(`Welcome ${name}! Aap ka account register ho gaya hai.`);
+            });
+        }
+
+        window.handleUpdateProfile = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('editName').value.trim();
+            const city = document.getElementById('editCity').value;
+            const phone = document.getElementById('editPhone').value.trim();
+
+            if (!name || !city || !phone) return;
+
+            const oldPhone = window.currentUser.phone;
+            window.currentUser.name = name;
+            window.currentUser.city = city;
+            window.currentUser.phone = phone;
+            if (window.tempDpBase64) window.currentUser.dp = window.tempDpBase64;
+
+            // Update in Firebase Users Node
+            let uObj = window.users.find(u => u.phone === oldPhone);
+            if (uObj && uObj.firebaseId) {
+                update(ref(db, "users/" + uObj.firebaseId), window.currentUser);
+            }
+
+            localStorage.setItem('pb_current_user', JSON.stringify(window.currentUser));
+            
+            window.tempDpBase64 = "";
+            window.updateUserPill();
+            window.closeModal('editProfileModal');
+            alert('Profile update ho gayi hai!');
+        }
+
+        window.checkAuthAndSell = function() {
+            if (!window.currentUser) {
+                window.openModal('registerModal');
+                return;
+            }
+            document.getElementById('editingProdId').value = "";
+            document.getElementById('sellModalTitle').innerText = "Sell Item";
+            document.getElementById('savePostBtn').innerText = "Post Item Now";
+            document.getElementById('postTitle').value = "";
+            document.getElementById('postPrice').value = "";
+            document.getElementById('postDesc').value = "";
+            document.getElementById('previewBox').innerHTML = "";
+            window.uploadedImagesBase64 = [];
+            window.openModal('sellModal');
+        }
+
+        window.handleMultipleImages = function(event) {
+            const files = Array.from(event.target.files);
+            window.uploadedImagesBase64 = [];
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = "";
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    window.uploadedImagesBase64.push(e.target.result);
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = "width:45px; height:45px; object-fit:cover; border-radius:4px; border:1px solid #ccc;";
+                    previewBox.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.handlePostOrUpdateProduct = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editingProdId').value;
+            const title = document.getElementById('postTitle').value.trim();
+            const price = document.getElementById('postPrice').value.trim();
+            const condition = document.getElementById('postCondition').value;
+            const desc = document.getElementById('postDesc').value.trim();
+
+            if (editId) {
+                let prod = window.products.find(p => p.id === editId);
+                if (prod) {
+                    let updatedData = {
+                        title, price, condition, desc,
+                        images: window.uploadedImagesBase64.length > 0 ? window.uploadedImagesBase64 : prod.images
+                    };
+                    update(ref(db, "products/" + editId), updatedData).then(() => {
+                        window.closeModal('sellModal');
+                    });
+                }
+            } else {
+                if (window.uploadedImagesBase64.length === 0) {
+                    alert('Photo upload karna zaroori hai!');
+                    return;
+                }
+                const newProd = {
+                    title, price, condition, desc,
+                    images: window.uploadedImagesBase64,
+                    sellerName: window.currentUser.name,
+                    sellerCity: window.currentUser.city,
+                    sellerPhone: window.currentUser.phone,
+                    timestamp: Date.now()
+                };
+
+                // Push new item directly to Firebase
+                push(ref(db, "products"), newProd).then(() => {
+                    window.closeModal('sellModal');
+                });
+            }
+        }
+
+        window.renderProducts = function(items) {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            if(!items || items.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            items.forEach(prod => {
+                const mainImg = prod.images && prod.images.length > 0 ? prod.images[0] : 'https://via.placeholder.com/160?text=No+Image';
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${mainImg}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-price">PKR ${parseInt(prod.price).toLocaleString()}</div>
+                        <div class="card-title">${prod.title}</div>
+                        <span class="card-badge">${prod.condition} (${prod.sellerCity || 'PK'})</span>
+                        <button class="btn-whatsapp" onclick="buyViaWhatsApp('${prod.id}')">💬 WhatsApp Chat</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.renderMyListedItems = function() {
+            const grid = document.getElementById('myItemsGrid');
+            const emptyState = document.getElementById('myEmptyState');
+            grid.innerHTML = '';
+
+            if (!window.currentUser) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            const myProds = window.products.filter(p => p.sellerPhone === window.currentUser.phone);
+
+            if (myProds.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                myProds.forEach(prod => {
+                    const mainImg = prod.images && prod.images.length > 0 ? prod.images[0] : 'https://via.placeholder.com/160?text=No+Image';
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        <img src="${mainImg}" class="card-img">
+                        <div class="card-body">
+                            <div class="card-price">PKR ${parseInt(prod.price).toLocaleString()}</div>
+                            <div class="card-title">${prod.title}</div>
+                            <span class="card-badge">${prod.condition}</span>
+                            <div class="my-item-actions">
+                                <button class="btn-edit" onclick="openEditProduct('${prod.id}')">✏️ Edit</button>
+                                <button class="btn-delete" onclick="deleteProduct('${prod.id}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        window.openEditProduct = function(id) {
+            const prod = window.products.find(p => p.id === id);
+            if (!prod) return;
+
+            document.getElementById('editingProdId').value = prod.id;
+            document.getElementById('sellModalTitle').innerText = "Edit Item";
+            document.getElementById('savePostBtn').innerText = "Update Changes";
+            
+            document.getElementById('postTitle').value = prod.title;
+            document.getElementById('postPrice').value = prod.price;
+            document.getElementById('postCondition').value = prod.condition;
+            document.getElementById('postDesc').value = prod.desc;
+            
+            window.openModal('sellModal');
+        }
+
+        window.deleteProduct = function(id) {
+            if (confirm("Kya aap wakai ye item delete karna chahte hain?")) {
+                remove(ref(db, "products/" + id));
+            }
+        }
+
+        window.filterProducts = function() {
+            const selectedCity = document.getElementById('cityFilter').value;
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            const filtered = window.products.filter(p => {
+                const cityMatch = (selectedCity === 'ALL') || (p.sellerCity && p.sellerCity.toLowerCase() === selectedCity.toLowerCase());
+                const searchMatch = !query || (p.title && p.title.toLowerCase().includes(query)) || (p.desc && p.desc.toLowerCase().includes(query));
+                return cityMatch && searchMatch;
+            });
+
+            window.renderProducts(filtered);
+        }
+
+        window.buyViaWhatsApp = function(prodId) {
+            const prod = window.products.find(p => p.id === prodId);
+            if (!prod) return;
+            let phone = prod.sellerPhone ? prod.sellerPhone.replace(/[^0-9]/g, '') : '';
+            if (phone.startsWith('0')) phone = '92' + phone.substring(1);
+
+            const msg = `Assalam-o-Alaikum ${prod.sellerName || ''}, main ne Pakistani Bazaar par aap ki ad *${prod.title}* (Price: PKR ${prod.price}) dekhi hai.`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        /* ADMIN LOGIC */
+        window.handleAdminLogin = function(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPass').value;
+            if (pass === 'za12##id34##') {
+                window.closeModal('adminAuthModal');
+                document.getElementById('tabBuyContent').style.display = 'none';
+                document.getElementById('tabSellContent').style.display = 'none';
+                document.getElementById('adminView').style.display = 'block';
+                window.loadAdminData();
+            } else {
+                alert('Ghalat Password!');
+            }
+        }
+
+        window.closeAdminPanel = function() {
+            window.switchMainTab('buy');
+        }
+
+        window.switchAdminTab = function(tab) {
+            if (tab === 'users') {
+                document.getElementById('adminUsersTab').style.display = 'block';
+                document.getElementById('adminProductsTab').style.display = 'none';
+                document.getElementById('tabUsers').classList.add('active');
+                document.getElementById('tabProducts').classList.remove('active');
+            } else {
+                document.getElementById('adminUsersTab').style.display = 'none';
+                document.getElementById('adminProductsTab').style.display = 'block';
+                document.getElementById('tabUsers').classList.remove('active');
+                document.getElementById('tabProducts').classList.add('active');
+            }
+        }
+
+        window.loadAdminData = function() {
+            const userTable = document.getElementById('adminUsersList');
+            userTable.innerHTML = '';
+            window.users.forEach(u => {
+                const tr = document.createElement('tr');
+                const dpImg = u.dp || 'https://via.placeholder.com/24?text=U';
+                tr.innerHTML = `
+                    <td><img src="${dpImg}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;"></td>
+                    <td><b>${u.name}</b></td>
+                    <td>${u.phone}</td>
+                    <td>${u.city || 'N/A'}</td>
+                    <td><button class="btn-delete" onclick="deleteUserByAdmin('${u.firebaseId}')">Delete User</button></td>
+                `;
+                userTable.appendChild(tr);
+            });
+
+            const prodTable = document.getElementById('adminProductsList');
+            prodTable.innerHTML = '';
+            window.products.forEach(p => {
+                const tr = document.createElement('tr');
+                const imgShow = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/30?text=Item';
+                tr.innerHTML = `
+                    <td><img src="${imgShow}" style="width:30px; height:30px; object-fit:cover; border-radius:4px;"></td>
+                    <td>${p.title}</td>
+                    <td>PKR ${p.price}</td>
+                    <td>${p.sellerName || 'N/A'}</td>
+                    <td><button class="btn-delete" onclick="deleteProduct('${p.id}')">Delete</button></td>
+                `;
+                prodTable.appendChild(tr);
+            });
+        }
+
+        window.deleteUserByAdmin = function(firebaseId) {
+            if (confirm('Kya aap is user ko delete karna chahte hain?')) {
+                remove(ref(db, "users/" + firebaseId));
+            }
+        }
+
+        window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; }
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>
