@@ -48,9 +48,9 @@
         .btn-whatsapp { background: var(--success); color: white; border: none; padding: 8px; border-radius: 5px; font-weight: 600; font-size: 13px; width: 100%; margin-top: auto; cursor: pointer; display: inline-block; text-align: center; text-decoration: none; }
 
         .my-item-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-delete { flex: 1; background: var(--danger); color: white; border: none; padding: 7px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap; }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-content: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-around: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .nav-tab { flex: 1; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .nav-tab.active { color: var(--primary); }
 
@@ -69,14 +69,14 @@
         .dp-preview-box { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; background: #f0f4f8; padding: 10px; border-radius: 8px; }
         .dp-preview-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: #fff; }
 
-        .admin-view { display: none; background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; }
+        .admin-view { display: none; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; width: 100%; overflow-x: auto; }
         .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .admin-tab { padding: 8px 16px; background: #eee; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
         .admin-tab.active { background: var(--primary); color: white; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; display: block; overflow-x: auto; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; min-width: 80px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
         th { background: #fafafa; color: var(--primary); }
-        .preview-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
+        .preview-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -125,25 +125,25 @@
     <!-- ADMIN VIEW PANEL -->
     <main id="adminView" class="admin-view">
         <div class="section-title">
-            <span>👑 Secret Admin Dashboard</span>
-            <button class="btn-delete" style="padding: 5px 10px; flex:none;" id="closeAdminBtn">Close Admin</button>
+            <span>👑 Admin Dashboard</span>
+            <button class="btn-delete" style="background:#555;" id="closeAdminBtn">Close Admin</button>
         </div>
         
         <div class="admin-nav">
-            <div class="admin-tab active" id="tabUsersBtn">Registered Users</div>
-            <div class="admin-tab" id="tabProductsBtn">All Listed Products</div>
+            <div class="admin-tab active" id="tabUsersBtn">Users List</div>
+            <div class="admin-tab" id="tabProductsBtn">Products List</div>
         </div>
 
         <div id="adminUsersTab">
             <table>
-                <thead><tr><th>DP</th><th>Name</th><th>Phone</th><th>City</th><th>Action</th></tr></thead>
+                <thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Action</th></tr></thead>
                 <tbody id="adminUsersList"></tbody>
             </table>
         </div>
 
         <div id="adminProductsTab" style="display: none;">
             <table>
-                <thead><tr><th>Photo</th><th>Title</th><th>Price</th><th>Seller</th><th>Action</th></tr></thead>
+                <thead><tr><th>Photo</th><th>Title</th><th>Price</th><th>Action</th></tr></thead>
                 <tbody id="adminProductsList"></tbody>
             </table>
         </div>
@@ -233,7 +233,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Photos (Select 1 to 5 Photos) *</label>
+                    <label>Photos (Select Photos) *</label>
                     <input type="file" id="postImgFiles" accept="image/*" multiple required>
                     <div id="previewBox" style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;"></div>
                 </div>
@@ -274,7 +274,6 @@
             document.getElementById(id).style.display = 'none';
         }
 
-        // Heavy compression to prevent loading freeze
         function compressImage(file, maxWidth, quality, callback) {
             if (!file) return callback("");
             const reader = new FileReader();
@@ -335,25 +334,29 @@
             } catch(e) { console.log(e); }
         }
 
-        // Global Delete Functions Fixed
-        window.deleteUser = async function(id) {
-            if(confirm("KiA AAP IS USER KO DELETE KARNA CHAHTE HAIN?")) {
+        // DIRECT DELETE FUNCTION FIXED FOR MOBILE & DESKTOP
+        async function removeUserAccount(id) {
+            if(confirm("Are you sure you want to delete this user?")) {
                 try {
                     await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
-                    alert("User Deleted!");
+                    alert("User Deleted Successfully!");
                     fetchUsers();
-                } catch(e) { alert("Delete Error!"); }
+                } catch(e) {
+                    alert("Delete Failed!");
+                }
             }
-        };
+        }
 
-        window.deleteProd = async function(id) {
-            if(confirm("KiA AAP IS PRODUCT KO DELETE KARNA CHAHTE HAIN?")) {
+        async function removeProduct(id) {
+            if(confirm("Delete this product?")) {
                 try {
                     await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
-                    alert("Item Deleted!");
+                    alert("Product Deleted!");
                     fetchProducts();
-                } catch(e) { alert("Delete Error!"); }
+                } catch(e) {
+                    alert("Delete Failed!");
+                }
             }
-        };
+        }
 
-        document.addEventLis
+        document.addEventListener('DOMContentLoaded'
