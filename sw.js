@@ -1,16 +1,15 @@
 self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (e) => {
-  return self.clients.claim();
+  e.waitUntil(
+    caches.open('pwa-store').then((cache) => {
+      return cache.addAll(['./index.html']);
+    })
+  );
 });
 
 self.addEventListener('fetch', (e) => {
-  // Simple fetch handler for PWA requirements
   e.respondWith(
-    fetch(e.request).catch(() => {
-      return caches.match(e.request);
+    caches.match(e.request).then((response) => {
+      return response || fetch(e.request);
     })
   );
 });
