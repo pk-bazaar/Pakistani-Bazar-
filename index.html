@@ -80,7 +80,8 @@
         .dp-preview-box { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; background: #f0f4f8; padding: 10px; border-radius: 8px; }
         .dp-preview-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: #fff; }
 
-        .admin-view { display: none; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; width: 100%; overflow-x: auto; }
+        /* ADMIN VIEW PANEL STYLING */
+        .admin-view { display: none; background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin: 20px auto; width: 100%; max-width: 1200px; }
         .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .admin-tab { padding: 8px 16px; background: #eee; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
         .admin-tab.active { background: var(--primary); color: white; }
@@ -98,41 +99,44 @@
         </div>
     </header>
 
-    <div id="tabBuyContent">
-        <div class="search-section">
-            <div class="search-box">
-                <select id="cityFilter" onchange="filterProducts()">
-                    <option value="ALL">📍 All Pakistan</option>
-                    <option value="Lahore">Lahore</option>
-                    <option value="Karachi">Karachi</option>
-                    <option value="Islamabad">Islamabad</option>
-                    <option value="Rawalpindi">Rawalpindi</option>
-                    <option value="Faisalabad">Faisalabad</option>
-                    <option value="Multan">Multan</option>
-                    <option value="Peshawar">Peshawar</option>
-                </select>
-                <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Search mobile, clothes, bikes...">
+    <!-- NORMAL BUY & SELL APP WRAPPER -->
+    <div id="mainAppContainer">
+        <div id="tabBuyContent">
+            <div class="search-section">
+                <div class="search-box">
+                    <select id="cityFilter" onchange="filterProducts()">
+                        <option value="ALL">📍 All Pakistan</option>
+                        <option value="Lahore">Lahore</option>
+                        <option value="Karachi">Karachi</option>
+                        <option value="Islamabad">Islamabad</option>
+                        <option value="Rawalpindi">Rawalpindi</option>
+                        <option value="Faisalabad">Faisalabad</option>
+                        <option value="Multan">Multan</option>
+                        <option value="Peshawar">Peshawar</option>
+                    </select>
+                    <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Search mobile, clothes, bikes...">
+                </div>
             </div>
+            <main>
+                <div class="section-title"><span>Fresh Items For Sale</span></div>
+                <div class="product-grid" id="productGrid"></div>
+                <div id="emptyState" class="empty-state" style="display: none;"><h3>Koi product nahi mila!</h3></div>
+            </main>
         </div>
-        <main>
-            <div class="section-title"><span>Fresh Items For Sale</span></div>
-            <div class="product-grid" id="productGrid"></div>
-            <div id="emptyState" class="empty-state" style="display: none;"><h3>Koi product nahi mila!</h3></div>
-        </main>
+
+        <div id="tabSellContent" style="display: none;">
+            <main style="margin-top:20px;">
+                <button class="btn-add-item" onclick="openSellModal()">➕ SELL A NEW ITEM</button>
+                <div class="section-title"><span>📦 My Listed Items</span></div>
+                <div class="product-grid" id="myItemsGrid"></div>
+                <div id="myEmptyState" class="empty-state" style="display: none;">
+                    <h3>Aap ne abhi tak koi item lagaya nahi hai!</h3>
+                </div>
+            </main>
+        </div>
     </div>
 
-    <div id="tabSellContent" style="display: none;">
-        <main style="margin-top:20px;">
-            <button class="btn-add-item" onclick="openSellModal()">➕ SELL A NEW ITEM</button>
-            <div class="section-title"><span>📦 My Listed Items</span></div>
-            <div class="product-grid" id="myItemsGrid"></div>
-            <div id="myEmptyState" class="empty-state" style="display: none;">
-                <h3>Aap ne abhi tak koi item lagaya nahi hai!</h3>
-            </div>
-        </main>
-    </div>
-
-    <!-- ADMIN VIEW PANEL -->
+    <!-- EXCLUSIVE ADMIN VIEW PANEL (Hides normal app when open) -->
     <main id="adminView" class="admin-view">
         <div class="section-title">
             <span>👑 Admin Dashboard</span>
@@ -159,7 +163,7 @@
         </div>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" id="bottomNav">
         <div class="nav-tab active" id="tabBuyBtn" onclick="switchMainTab('buy')"><span>🛒</span><span>BUYING</span></div>
         <div class="nav-tab" id="tabSellBtn" onclick="switchMainTab('sell')"><span>🏷️</span><span>SELLING</span></div>
     </nav>
@@ -327,416 +331,8 @@
             }
         }
 
+        // Live check if logged-in user got deleted by admin
         async function verifyCurrentUserExists() {
             if(!currentUser) return;
             try {
-                const res = await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`);
-                const data = await res.json();
-                if(!data) {
-                    alert("Aap ka account delete kar diya gaya hai.");
-                    handleLogout();
-                }
-            } catch(e) {}
-        }
-
-        async function fetchProducts() {
-            try {
-                const res = await fetch(`${DB_BASE_URL}/products.json`);
-                const data = await res.json();
-                products = [];
-                if(data) {
-                    Object.keys(data).forEach(key => products.push({ id: key, ...data[key] }));
-                    products.reverse();
-                }
-                filterProducts();
-                renderMyListedItems();
-                if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            } catch(e) {}
-        }
-
-        async function fetchUsers() {
-            try {
-                const res = await fetch(`${DB_BASE_URL}/users.json`);
-                const data = await res.json();
-                users = [];
-                if(data) {
-                    Object.keys(data).forEach(key => users.push({ id: key, ...data[key] }));
-                }
-                verifyCurrentUserExists();
-                if(document.getElementById('adminView').style.display === 'block') loadAdminData();
-            } catch(e) {}
-        }
-
-        function switchAuthTab(type) {
-            document.getElementById('tabLoginBtn').classList.toggle('active', type === 'login');
-            document.getElementById('tabRegisterBtn').classList.toggle('active', type === 'register');
-            document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
-            document.getElementById('regForm').style.display = type === 'register' ? 'block' : 'none';
-        }
-
-        function openUserProfileModal() {
-            if(!currentUser) {
-                switchAuthTab('login');
-                document.getElementById('authModal').style.display = 'flex';
-            } else {
-                document.getElementById('editName').value = currentUser.name;
-                document.getElementById('editCity').value = currentUser.city;
-                document.getElementById('editPhone').value = currentUser.phone;
-                document.getElementById('editDpPreview').src = currentUser.dp || 'https://via.placeholder.com/60?text=User';
-                tempDpBase64 = currentUser.dp || '';
-                document.getElementById('editProfileModal').style.display = 'flex';
-            }
-        }
-
-        function handleDpUpload(e, previewId) {
-            if(e.target.files[0]) {
-                compressImage(e.target.files[0], 120, 0.4, (url) => {
-                    document.getElementById(previewId).src = url;
-                    tempDpBase64 = url;
-                });
-            }
-        }
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const inputPhone = cleanPhoneNumber(document.getElementById('loginPhone').value);
-            const btn = document.getElementById('loginSubmitBtn');
-            btn.innerText = "Checking...";
-            btn.disabled = true;
-
-            await fetchUsers();
-
-            const existingUser = users.find(u => cleanPhoneNumber(u.phone) === inputPhone);
-
-            if(existingUser) {
-                currentUser = existingUser;
-                localStorage.setItem('pb_current_user', JSON.stringify(existingUser));
-                updateUserPill();
-                renderMyListedItems();
-                document.getElementById('authModal').style.display = 'none';
-                alert(`Welcome back, ${existingUser.name}!`);
-            } else {
-                alert("Yeh phone number registered nahi hai! Pehle Sign Up tab par ja kar account banayein.");
-                switchAuthTab('register');
-            }
-
-            btn.innerText = "Login To Account";
-            btn.disabled = false;
-        }
-
-        async function handleRegister(e) {
-            e.preventDefault();
-            const rawPhone = document.getElementById('regPhone').value;
-            const cleanPhone = cleanPhoneNumber(rawPhone);
-            const btn = document.getElementById('regSubmitBtn');
-
-            btn.innerText = "Verifying...";
-            btn.disabled = true;
-
-            await fetchUsers();
-
-            const alreadyExists = users.some(u => cleanPhoneNumber(u.phone) === cleanPhone);
-
-            if(alreadyExists) {
-                alert("⚠️ Yeh Phone Number pehle se registered hai!\n\nKripya LOGIN tab par ja kar apna number daal kar account open karein.");
-                switchAuthTab('login');
-                document.getElementById('loginPhone').value = rawPhone;
-                btn.innerText = "Create New Account";
-                btn.disabled = false;
-                return;
-            }
-
-            btn.innerText = "Saving Account...";
-
-            const userId = 'user_' + Date.now();
-            const userData = {
-                id: userId,
-                name: document.getElementById('regName').value,
-                city: document.getElementById('regCity').value,
-                phone: rawPhone,
-                dp: tempDpBase64 || 'https://via.placeholder.com/60?text=User'
-            };
-
-            try {
-                await fetch(`${DB_BASE_URL}/users/${userId}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(userData)
-                });
-                currentUser = userData;
-                localStorage.setItem('pb_current_user', JSON.stringify(userData));
-                updateUserPill();
-                document.getElementById('authModal').style.display = 'none';
-                alert("Account Registered & Logged in successfully!");
-                fetchUsers();
-            } catch(err) {
-                alert("Registration failed.");
-            } finally {
-                btn.innerText = "Create New Account";
-                btn.disabled = false;
-            }
-        }
-
-        async function handleEditProfile(e) {
-            e.preventDefault();
-            const updatedData = {
-                ...currentUser,
-                name: document.getElementById('editName').value,
-                city: document.getElementById('editCity').value,
-                dp: tempDpBase64 || currentUser.dp
-            };
-
-            try {
-                await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(updatedData)
-                });
-                currentUser = updatedData;
-                localStorage.setItem('pb_current_user', JSON.stringify(updatedData));
-                updateUserPill();
-                document.getElementById('editProfileModal').style.display = 'none';
-                alert("Profile Updated!");
-                fetchUsers();
-            } catch(err) { alert("Error updating profile."); }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('pb_current_user');
-            currentUser = null;
-            updateUserPill();
-            document.getElementById('editProfileModal').style.display = 'none';
-            renderMyListedItems();
-        }
-
-        function openSellModal() {
-            if(!currentUser) {
-                alert("Item lagane ke liye pehle Login / Register karein!");
-                switchAuthTab('login');
-                document.getElementById('authModal').style.display = 'flex';
-            } else {
-                document.getElementById('postTitle').value = "";
-                document.getElementById('postPrice').value = "";
-                document.getElementById('postDesc').value = "";
-                document.getElementById('previewBox').innerHTML = "";
-                uploadedImagesBase64 = [];
-                document.getElementById('sellModal').style.display = 'flex';
-            }
-        }
-
-        function handleProductImgUpload(e) {
-            const files = Array.from(e.target.files).slice(0, 3);
-            uploadedImagesBase64 = [];
-            const previewBox = document.getElementById('previewBox');
-            previewBox.innerHTML = '';
-            files.forEach(file => {
-                compressImage(file, 250, 0.4, (url) => {
-                    uploadedImagesBase64.push(url);
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.style.width = '40px';
-                    img.style.height = '40px';
-                    img.style.objectFit = 'cover';
-                    previewBox.appendChild(img);
-                });
-            });
-        }
-
-        async function handlePostItem(e) {
-            e.preventDefault();
-            const saveBtn = document.getElementById('savePostBtn');
-            saveBtn.innerText = "Posting...";
-            saveBtn.disabled = true;
-
-            const prodId = 'prod_' + Date.now();
-            const newProd = {
-                id: prodId,
-                title: document.getElementById('postTitle').value,
-                price: document.getElementById('postPrice').value,
-                condition: document.getElementById('postCondition').value,
-                desc: document.getElementById('postDesc').value,
-                images: uploadedImagesBase64.length > 0 ? uploadedImagesBase64 : ['https://via.placeholder.com/200'],
-                sellerId: currentUser.id,
-                sellerName: currentUser.name,
-                sellerPhone: currentUser.phone,
-                city: currentUser.city,
-                createdAt: Date.now()
-            };
-
-            try {
-                await fetch(`${DB_BASE_URL}/products/${prodId}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(newProd)
-                });
-                document.getElementById('sellModal').style.display = 'none';
-                alert("Item Posted!");
-                fetchProducts();
-            } catch(err) { alert("Error posting item."); }
-            finally {
-                saveBtn.innerText = "Post Item Now";
-                saveBtn.disabled = false;
-            }
-        }
-
-        function switchMainTab(tab) {
-            document.getElementById('tabBuyBtn').classList.toggle('active', tab === 'buy');
-            document.getElementById('tabSellBtn').classList.toggle('active', tab === 'sell');
-            document.getElementById('tabBuyContent').style.display = tab === 'buy' ? 'block' : 'none';
-            document.getElementById('tabSellContent').style.display = tab === 'sell' ? 'block' : 'none';
-            if(tab === 'sell') renderMyListedItems();
-        }
-
-        function filterProducts() {
-            const city = document.getElementById('cityFilter').value;
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const grid = document.getElementById('productGrid');
-            grid.innerHTML = '';
-
-            const filtered = products.filter(p => {
-                const matchCity = (city === 'ALL' || p.city === city);
-                const matchSearch = (p.title && p.title.toLowerCase().includes(search));
-                return matchCity && matchSearch;
-            });
-
-            document.getElementById('emptyState').style.display = filtered.length === 0 ? 'block' : 'none';
-            filtered.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
-                const cleanPhone = cleanPhoneNumber(p.sellerPhone);
-                const formattedPhone = '92' + cleanPhone.slice(-10);
-                
-                const msg = encodeURIComponent(`Assalam-o-Alaikum! Mujhe aap ki yeh product "${p.title}" (Rs ${Number(p.price).toLocaleString()}) pasand aayi hai, kya yeh abhi available hai?`);
-                const whatsappUrl = `https://wa.me/${formattedPhone}?text=${msg}`;
-
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <img src="${img}" class="card-img">
-                        <div class="card-body">
-                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
-                            <div class="card-title">${p.title}</div>
-                            <div class="card-badge">📍 ${p.city} • ${p.condition}</div>
-                            <a href="${whatsappUrl}" target="_blank" class="btn-whatsapp">💬 Chat on WhatsApp</a>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderMyListedItems() {
-            const grid = document.getElementById('myItemsGrid');
-            if(!currentUser) return grid.innerHTML = '';
-            const myProds = products.filter(p => p.sellerId === currentUser.id);
-            grid.innerHTML = '';
-            document.getElementById('myEmptyState').style.display = myProds.length === 0 ? 'block' : 'none';
-
-            myProds.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/200');
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <img src="${img}" class="card-img">
-                        <div class="card-body">
-                            <div class="card-price">Rs ${Number(p.price).toLocaleString()}</div>
-                            <div class="card-title">${p.title}</div>
-                            <div style="margin-top:10px;">
-                                <button class="btn-delete" onclick="removeProduct('${p.id}')">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function handleLogoClick() {
-            logoClickCount++;
-            if(logoClickCount >= 3) {
-                logoClickCount = 0;
-                document.getElementById('adminAuthModal').style.display = 'flex';
-            }
-        }
-
-        function handleAdminLogin(e) {
-            e.preventDefault();
-            if(document.getElementById('adminPass').value === 'za12##id34##') {
-                document.getElementById('adminAuthModal').style.display = 'none';
-                document.getElementById('tabBuyContent').style.display = 'none';
-                document.getElementById('tabSellContent').style.display = 'none';
-                document.getElementById('adminView').style.display = 'block';
-                loadAdminData();
-            } else {
-                alert("Wrong Password!");
-            }
-        }
-
-        function closeAdminPanel() {
-            document.getElementById('adminView').style.display = 'none';
-            switchMainTab('buy');
-        }
-
-        function switchAdminTab(type) {
-            document.getElementById('tabUsersBtn').classList.toggle('active', type === 'users');
-            document.getElementById('tabProductsBtn').classList.toggle('active', type === 'products');
-            document.getElementById('adminUsersTab').style.display = type === 'users' ? 'block' : 'none';
-            document.getElementById('adminProductsTab').style.display = type === 'products' ? 'block' : 'none';
-        }
-
-        function loadAdminData() {
-            const uList = document.getElementById('adminUsersList');
-            uList.innerHTML = '';
-            users.forEach(u => {
-                uList.innerHTML += `<tr>
-                    <td><b>${u.name}</b></td>
-                    <td>${u.phone}</td>
-                    <td>${u.city}</td>
-                    <td><button class="btn-delete" onclick="removeUserAccount('${u.id}')">Delete</button></td>
-                </tr>`;
-            });
-
-            const pList = document.getElementById('adminProductsList');
-            pList.innerHTML = '';
-            products.forEach(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image || 'https://via.placeholder.com/60');
-                pList.innerHTML += `<tr>
-                    <td><img src="${img}" style="width:35px;height:35px;object-fit:cover;border-radius:4px;"></td>
-                    <td>${p.title}</td>
-                    <td>Rs ${p.price}</td>
-                    <td><button class="btn-delete" onclick="removeProduct('${p.id}')">Delete</button></td>
-                </tr>`;
-            });
-        }
-
-        async function removeUserAccount(id) {
-            if(confirm("Delete this user permanently?")) {
-                users = users.filter(u => u.id !== id);
-                loadAdminData();
-                try {
-                    await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
-                } catch(e) { fetchUsers(); }
-            }
-        }
-
-        async function removeProduct(id) {
-            if(confirm("Delete this product?")) {
-                products = products.filter(p => p.id !== id);
-                filterProducts();
-                renderMyListedItems();
-                loadAdminData();
-                try {
-                    await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
-                } catch(e) { fetchProducts(); }
-            }
-        }
-
-        window.onload = () => {
-            updateUserPill();
-            fetchProducts();
-            fetchUsers();
-
-            setInterval(() => {
-                verifyCurrentUserExists();
-            }, 3000);
-
-            // Register Service Worker for PWA / Install
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
-            }
-        };
-    </script>
-</body>
-</html>
+                const res = await fetch(`${DB_BASE_URL}/use
