@@ -310,4 +310,628 @@
                 <div class="form-group"><label>Price (PKR) *</label><input type="number" id="postPrice" required></div>
                 <div class="form-group">
                     <label>Condition *</label>
-  
+                    <select id="postCondition" required>
+                        <option value="Used">Used</option><option value="Brand New">Brand New</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Item Photos (Min 1, Max 5 Images) *</label>
+                    <input type="file" id="postImgFiles" accept="image/*" multiple required onchange="handleProductImgsUpload(event)">
+                    <div id="previewBox" style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;"></div>
+                </div>
+                <div class="form-group"><label>Description *</label><textarea id="postDesc" rows="3" required></textarea></div>
+                <button type="submit" class="btn-submit" id="savePostBtn">Post Item Now</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Auth Modal -->
+    <div class="modal" id="adminAuthModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('adminAuthModal')">&times;</span>
+            <div class="modal-header">Secret Admin Login</div>
+            <form onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn-submit">Login Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const DB_BASE_URL = "https://pakistani-bazaar-za-default-rtdb.firebaseio.com";
+
+        let currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
+        let products = [];
+        let users = [];
+        let uploadedImagesBase64 = [];
+        let tempDpBase64 = "";
+        let logoClickCount = 0;
+        let deferredPrompt = null;
+
+        window.onload = function() {
+            updateUserPill();
+            fetchData();
+        };
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('installBtn');
+            if(installBtn) installBtn.style.display = 'flex';
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installBtn').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert("App pehle se installed hai ya browser support nahi karta!");
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function cleanPhoneNumber(phone) {
+            return phone ? phone.replace(/[^0-9]/g, '') : '';
+        }
+
+        function compressImage(file, maxWidth, quality, callback) {
+            if (!file) return callback("");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => callback(e.target.result);
+            };
+            reader.onerror = () => callback("");
+        }
+
+        function updateUserPill() {
+            const pill = document.getElementById('userPill');
+            if(currentUser) {
+                pill.innerHTML = `<img src="${currentUser.dp || 'https://via.placeholder.com/26?text=U'}" class="user-dp-icon"> <span>${currentUser.name}</span>`;
+            } else {
+                pill.innerHTML = `<span>Guest (Login)</span>`;
+            }
+        }
+
+        function switchMainTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            if(tab === 'buy') {
+                document.getElementById('tabBuyBtn').classList.add('active');
+                document.getElementById('tabBuyContent').style.display = 'block';
+                document.getElementById('tabSellContent').style.display = 'none';
+                filterProducts();
+            } else {
+                document.getElementById('tabSellBtn').classList.add('active');
+                document.getElementById('tabBuyContent').style.display = 'none';
+                document.getElementById('tabSellContent').style.display = 'block';
+                renderMyItems();
+            }
+            document.getElementById('adminView').style.display = 'none';
+            document.getElementById('mainAppContainer').style.display = 'block';
+        }
+
+        function openUserProfileModal() {
+            if(!currentUser) {
+                document.getElementById('authModal').style.display = 'flex';
+            } else {
+                document.getElementById('editName').value = currentUser.name || '';
+                document.getElementById('editCity').value = currentUser.city || 'Lahore';
+                document.getElementById('editPhone').value = currentUser.phone || '';
+                document.getElementById('editDpPreview').src = currentUser.dp || "https://via.placeholder.com/60?text=User";
+                tempDpBase64 = currentUser.dp || "";
+                document.getElementById('editProfileModal').style.display = 'flex';
+            }
+        }
+
+        function switchAuthTab(tab) {
+            if(tab === 'login') {
+                document.getElementById('tabLoginBtn').classList.add('active');
+                document.getElementById('tabRegisterBtn').classList.remove('active');
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('regForm').style.display = 'none';
+            } else {
+                document.getElementById('tabRegisterBtn').classList.add('active');
+                document.getElementById('tabLoginBtn').classList.remove('active');
+                document.getElementById('regForm').style.display = 'block';
+                document.getElementById('loginForm').style.display = 'none';
+            }
+        }
+
+        function handleLogoClick() {
+            logoClickCount++;
+            if(logoClickCount >= 5) {
+                logoClickCount = 0;
+                document.getElementById('adminAuthModal').style.display = 'flex';
+            }
+        }
+
+        function openSellModal() {
+            if(!currentUser) {
+                alert('Pehle login karein!');
+                openUserProfileModal();
+                return;
+            }
+            document.getElementById('sellModal').style.display = 'flex';
+        }
+
+        function handleDpUpload(event, previewId) {
+            const file = event.target.files[0];
+            if(file) {
+                compressImage(file, 200, 0.7, (base64) => {
+                    tempDpBase64 = base64;
+                    document.getElementById(previewId).src = base64;
+                });
+            }
+        }
+
+        function handleProductImgsUpload(event) {
+            const files = event.target.files;
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = '';
+            uploadedImagesBase64 = [];
+
+            if (files.length > 5) {
+                alert("Aap maximum 5 images select kar sakte hain!");
+                event.target.value = '';
+                return;
+            }
+
+            Array.from(files).forEach(file => {
+                compressImage(file, 400, 0.6, (base64) => {
+                    uploadedImagesBase64.push(base64);
+                    const img = document.createElement('img');
+                    img.src = base64;
+                    img.style.width = '60px';
+                    img.style.height = '60px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    previewBox.appendChild(img);
+                });
+            });
+        }
+
+        async function fetchData() {
+            try {
+                const [prodRes, userRes] = await Promise.all([
+                    fetch(`${DB_BASE_URL}/products.json`),
+                    fetch(`${DB_BASE_URL}/users.json`)
+                ]);
+                
+                const prodData = await prodRes.json();
+                products = [];
+                if (prodData) {
+                    Object.keys(prodData).forEach(key => {
+                        products.push({ id: key, ...prodData[key] });
+                    });
+                }
+                
+                const userData = await userRes.json();
+                users = [];
+                if (userData) {
+                    Object.keys(userData).forEach(key => {
+                        users.push({ id: key, ...userData[key] });
+                    });
+                }
+
+                if (currentUser) {
+                    const userExists = users.some(u => u.id === currentUser.id);
+                    if (!userExists) {
+                        alert("Aapka account admin ne delete kar diya hai!");
+                        handleLogoutLocally();
+                    }
+                }
+                
+                filterProducts();
+            } catch (e) {
+                console.log("Database connection offline/error:", e);
+            }
+        }
+
+        function filterProducts() {
+            const cityEl = document.getElementById('cityFilter');
+            const searchEl = document.getElementById('searchInput');
+            const city = cityEl ? cityEl.value : 'ALL';
+            const search = searchEl ? searchEl.value.toLowerCase() : '';
+            
+            let filtered = products.filter(p => {
+                let matchCity = (city === 'ALL' || p.city === city);
+                let matchSearch = (p.title && p.title.toLowerCase().includes(search)) || (p.desc && p.desc.toLowerCase().includes(search));
+                return matchCity && matchSearch;
+            });
+
+            renderProducts(filtered);
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('productGrid');
+            const empty = document.getElementById('emptyState');
+            if(!grid) return;
+            grid.innerHTML = '';
+
+            if(list.length === 0) {
+                if(empty) empty.style.display = 'block';
+                return;
+            }
+            if(empty) empty.style.display = 'none';
+
+            list.slice().reverse().forEach(p => {
+                let img = '';
+                if (p.images && p.images.length > 0) {
+                    img = p.images[0];
+                } else if (p.image) {
+                    img = p.image;
+                } else {
+                    img = 'https://via.placeholder.com/220?text=No+Image';
+                }
+
+                let card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => openProductDetails(p.id);
+                card.innerHTML = `
+                    <img src="${img}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-price">Rs ${Number(p.price || 0).toLocaleString()}</div>
+                        <div class="card-title">${p.title || ''}</div>
+                        <div class="card-desc-snippet">${p.desc || ''}</div>
+                        <div class="card-badge">${p.condition || ''} • ${p.city || ''}</div>
+                        <a href="https://wa.me/92${(p.phone || '').replace(/^0/, '')}?text=Hi,%20I%20want%20to%20buy%20your%20item:%20${encodeURIComponent(p.title || '')}" target="_blank" class="btn-whatsapp" onclick="event.stopPropagation()">💬 Chat on WhatsApp</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openProductDetails(productId) {
+            const p = products.find(item => item.id === productId);
+            if(!p) return;
+
+            let imgs = [];
+            if(p.images && p.images.length > 0) {
+                imgs = p.images;
+            } else if(p.image) {
+                imgs = [p.image];
+            } else {
+                imgs = ['https://via.placeholder.com/400?text=No+Image'];
+            }
+
+            const bodyDiv = document.getElementById('productDetailsBody');
+            
+            let thumbsHtml = '';
+            imgs.forEach((im, idx) => {
+                thumbsHtml += `<img src="${im}" class="details-thumb ${idx === 0 ? 'active' : ''}" onclick="changeMainDetailsImg(this, '${im}')">`;
+            });
+
+            bodyDiv.innerHTML = `
+                <img id="mainDetailsImg" src="${imgs[0]}" class="details-main-img">
+                <div class="details-thumbs">${thumbsHtml}</div>
+                <div class="details-price">Rs ${Number(p.price || 0).toLocaleString()}</div>
+                <div class="details-title">${p.title || ''}</div>
+                <div class="details-meta">📍 ${p.city || ''} &nbsp;|&nbsp; 🏷️ ${p.condition || ''}</div>
+                <div class="details-desc-box">${p.desc || 'Koi description maujood nahi hai.'}</div>
+                <a href="https://wa.me/92${(p.phone || '').replace(/^0/, '')}?text=Hi,%20I%20want%20to%20buy%20your%20item:%20${encodeURIComponent(p.title || '')}" target="_blank" class="btn-whatsapp" style="padding: 12px; font-size: 15px;">💬 Chat on WhatsApp with Seller</a>
+            `;
+
+            document.getElementById('productDetailsModal').style.display = 'flex';
+        }
+
+        function changeMainDetailsImg(thumbElement, imgUrl) {
+            document.getElementById('mainDetailsImg').src = imgUrl;
+            document.querySelectorAll('.details-thumb').forEach(el => el.classList.remove('active'));
+            thumbElement.classList.add('active');
+        }
+
+        function renderMyItems() {
+            if(!currentUser) return;
+            const grid = document.getElementById('myItemsGrid');
+            const empty = document.getElementById('myEmptyState');
+            if(!grid) return;
+            grid.innerHTML = '';
+
+            let myList = products.filter(p => cleanPhoneNumber(p.phone) === cleanPhoneNumber(currentUser.phone));
+
+            if(myList.length === 0) {
+                if(empty) empty.style.display = 'block';
+                return;
+            }
+            if(empty) empty.style.display = 'none';
+
+            myList.slice().reverse().forEach(p => {
+                let img = '';
+                if (p.images && p.images.length > 0) {
+                    img = p.images[0];
+                } else if (p.image) {
+                    img = p.image;
+                } else {
+                    img = 'https://via.placeholder.com/220?text=No+Image';
+                }
+
+                let card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${img}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-price">Rs ${Number(p.price || 0).toLocaleString()}</div>
+                        <div class="card-title">${p.title || ''}</div>
+                        <div class="card-desc-snippet">${p.desc || ''}</div>
+                        <div class="card-badge">${p.condition || ''} • ${p.city || ''}</div>
+                        <button class="btn-delete" onclick="deleteItem('${p.id}')" style="margin-top:auto;">🗑️ Delete Item</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const phone = cleanPhoneNumber(document.getElementById('loginPhone').value);
+            const btn = document.getElementById('loginSubmitBtn');
+            btn.innerText = "Logging in...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users.json`);
+                const data = await res.json();
+                let found = null;
+                if(data) {
+                    Object.keys(data).forEach(k => {
+                        if(cleanPhoneNumber(data[k].phone) === phone) {
+                            found = { id: k, ...data[k] };
+                        }
+                    });
+                }
+
+                if(found) {
+                    currentUser = found;
+                    localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                    updateUserPill();
+                    closeModal('authModal');
+                    alert("Login successful!");
+                } else {
+                    alert("Yeh number register nahi hai! Pehle Sign Up karein.");
+                    switchAuthTab('register');
+                    document.getElementById('regPhone').value = phone;
+                }
+            } catch(err) {
+                alert("Network error. Try again!");
+            }
+            btn.innerText = "Login To Account";
+            btn.disabled = false;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const city = document.getElementById('regCity').value;
+            const phone = cleanPhoneNumber(document.getElementById('regPhone').value);
+            const btn = document.getElementById('regSubmitBtn');
+            
+            btn.innerText = "Creating Account...";
+            btn.disabled = true;
+
+            const newUser = { name, city, phone, dp: tempDpBase64 };
+
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users.json`, {
+                    method: 'POST',
+                    body: JSON.stringify(newUser)
+                });
+                const data = await res.json();
+                currentUser = { id: data.name, ...newUser };
+                localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                updateUserPill();
+                closeModal('authModal');
+                alert("Account created successfully!");
+                fetchData();
+            } catch(err) {
+                alert("Registration failed!");
+            }
+            btn.innerText = "Create New Account";
+            btn.disabled = false;
+        }
+
+        async function handleEditProfile(e) {
+            e.preventDefault();
+            if(!currentUser) return;
+            currentUser.name = document.getElementById('editName').value;
+            currentUser.city = document.getElementById('editCity').value;
+            currentUser.dp = tempDpBase64;
+
+            try {
+                await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: currentUser.name, city: currentUser.city, dp: currentUser.dp })
+                });
+                localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                updateUserPill();
+                closeModal('editProfileModal');
+                alert("Profile updated!");
+                fetchData();
+            } catch(e) {
+                alert("Failed to update profile");
+            }
+        }
+
+        function handleLogoutLocally() {
+            localStorage.removeItem('pb_current_user');
+            currentUser = null;
+            updateUserPill();
+            location.reload();
+        }
+
+        function handleLogout() {
+            handleLogoutLocally();
+            closeModal('editProfileModal');
+        }
+
+        async function handlePostItem(e) {
+            e.preventDefault();
+            if(!currentUser) return;
+
+            if(uploadedImagesBase64.length === 0) {
+                alert("Bhai, kam az kam 1 tasveer (photo) select karna lazmi hai!");
+                return;
+            }
+
+            const btn = document.getElementById('savePostBtn');
+            btn.innerText = "Posting...";
+            btn.disabled = true;
+
+            const newProduct = {
+                title: document.getElementById('postTitle').value,
+                price: document.getElementById('postPrice').value,
+                condition: document.getElementById('postCondition').value,
+                desc: document.getElementById('postDesc').value,
+                city: currentUser.city,
+                phone: currentUser.phone,
+                images: uploadedImagesBase64
+            };
+
+            try {
+                const res = await fetch(`${DB_BASE_URL}/products.json`, {
+                    method: 'POST',
+                    body: JSON.stringify(newProduct)
+                });
+                const data = await res.json();
+                
+                products.push({ id: data.name, ...newProduct });
+
+                alert("Item posted successfully!");
+                closeModal('sellModal');
+                document.getElementById('sellForm').reset();
+                uploadedImagesBase64 = [];
+                document.getElementById('previewBox').innerHTML = '';
+                
+                switchMainTab('buy');
+            } catch(e) {
+                alert("Failed to post item.");
+            }
+            btn.innerText = "Post Item Now";
+            btn.disabled = false;
+        }
+
+        async function deleteItem(id) {
+            if(!confirm("Kya aap yeh item delete karna chahte hain?")) return;
+            try {
+                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                products = products.filter(p => p.id !== id);
+                alert("Item deleted!");
+                filterProducts();
+                renderMyItems();
+            } catch(e) {
+                alert("Delete failed!");
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPass').value;
+            if(pass === "za12##id34##") {
+                closeModal('adminAuthModal');
+                document.getElementById('mainAppContainer').style.display = 'none';
+                document.getElementById('adminView').style.display = 'block';
+                renderAdminData();
+            } else {
+                alert("Ghalat password!");
+            }
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminView').style.display = 'none';
+            document.getElementById('mainAppContainer').style.display = 'block';
+            fetchData();
+        }
+
+        function switchAdminTab(tab) {
+            if(tab === 'users') {
+                document.getElementById('adminUsersTab').style.display = 'block';
+                document.getElementById('adminProductsTab').style.display = 'none';
+                document.getElementById('tabUsersBtn').classList.add('active');
+                document.getElementById('tabProductsBtn').classList.remove('active');
+            } else {
+                document.getElementById('adminProductsTab').style.display = 'block';
+                document.getElementById('adminUsersTab').style.display = 'none';
+                document.getElementById('tabProductsBtn').classList.add('active');
+                document.getElementById('tabUsersBtn').classList.remove('active');
+            }
+        }
+
+        function renderAdminData() {
+            const uList = document.getElementById('adminUsersList');
+            if(uList) {
+                uList.innerHTML = '';
+                users.forEach(u => {
+                    uList.innerHTML += `<tr><td>${u.name || ''}</td><td>${u.phone || ''}</td><td>${u.city || ''}</td><td><button class="btn-delete" onclick="adminDeleteUser('${u.id}')">Delete</button></td></tr>`;
+                });
+            }
+
+            const pList = document.getElementById('adminProductsList');
+            if(pList) {
+                pList.innerHTML = '';
+                products.forEach(p => {
+                    let img = '';
+                    if (p.images && p.images.length > 0) {
+                        img = p.images[0];
+                    } else if (p.image) {
+                        img = p.image;
+                    }
+
+                    pList.innerHTML += `<tr><td><img src="${img}" style="width:30px;height:30px;object-fit:cover;"></td><td>${p.title || ''}</td><td>Rs ${p.price || 0}</td><td><button class="btn-delete" onclick="adminDeleteProduct('${p.id}')">Delete</button></td></tr>`;
+                });
+            }
+        }
+
+        async function adminDeleteUser(id) {
+            if(!confirm("Delete user?")) return;
+            try {
+                await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
+                users = users.filter(u => u.id !== id);
+                renderAdminData();
+                alert("User deleted successfully!");
+            } catch(e) {
+                alert("Delete failed!");
+            }
+        }
+
+        async function adminDeleteProduct(id) {
+            if(!confirm("Delete product?")) return;
+            try {
+                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                products = products.filter(p => p.id !== id);
+                renderAdminData();
+                alert("Product deleted successfully!");
+            } catch(e) {
+                alert("Delete failed!");
+            }
+        }
+    </script>
+</body>
+</html>
