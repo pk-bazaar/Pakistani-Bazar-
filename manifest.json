@@ -1,20 +1,23 @@
 {
-  "short_name": "PK Bazar",
   "name": "Pakistani Bazaar",
-  "icons": [
-    {
-      "src": "https://i.postimg.cc/6QJ2XLFh/IMG-20260804-002145.jpg",
-      "type": "image/jpeg",
-      "sizes": "192x192"
-    },
-    {
-      "src": "https://i.postimg.cc/6QJ2XLFh/IMG-20260804-002145.jpg",
-      "type": "image/jpeg",
-      "sizes": "512x512"
-    }
-  ],
+  "short_name": "PakBazaar",
   "start_url": "./index.html",
+  "display": "standalone",
   "background_color": "#002f34",
   "theme_color": "#002f34",
-  "display": "standalone"
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/fWK4szSF/IMG-20260804-WA6362.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/fWK4szSF/IMG-20260804-WA6362.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
 }
