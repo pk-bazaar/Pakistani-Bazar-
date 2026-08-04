@@ -20,6 +20,7 @@
             --text-dark: #002f34;
             --text-muted: #6c757d;
             --danger: #ff4d4f;
+            --warning: #faad14;
             --success: #25d366;
             --border-color: #e2e8f0;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -90,6 +91,11 @@
         .btn-delete { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
         .btn-delete:hover { opacity: 0.9; }
 
+        .btn-block { background: var(--warning); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
+        .btn-block:hover { opacity: 0.9; }
+
+        .btn-unblock { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
+
         /* Bottom Navbar */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-content: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); }
         .nav-tab { flex: 1; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; }
@@ -137,9 +143,11 @@
 
         /* Admin View */
         .admin-view { display: none; background: white; padding: 20px; border-radius: 10px; border: 1px solid var(--border-color); margin: 20px auto; width: 100%; max-width: 1200px; box-shadow: var(--shadow); }
-        .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; flex-wrap: wrap; }
         .admin-tab { padding: 8px 16px; background: #f1f5f9; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-dark); }
         .admin-tab.active { background: var(--primary); color: white; }
+        .admin-search { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; font-size: 14px; outline: none; }
+        
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         th { background: #f8fafc; color: var(--primary); font-weight: 700; }
@@ -185,7 +193,6 @@
                 <span class="icon">🏷️</span> My Selling Items
             </a>
             <div class="sidebar-divider"></div>
-            <!-- Contact Admin via WhatsApp Option -->
             <a href="https://wa.me/923284104285?text=Salam!%20Mujhe%20Pakistani%20Bazaar%20website%20ke%20baray%20mein%20baat%20karni%20hai." target="_blank" class="sidebar-item" onclick="toggleSidebar(false)">
                 <span class="icon" style="color: var(--success);">💬</span> Contact with Admin
             </a>
@@ -255,19 +262,30 @@
         
         <div class="admin-nav">
             <div class="admin-tab active" id="tabUsersBtn" onclick="switchAdminTab('users')">Users List</div>
+            <div class="admin-tab" id="tabBlockedBtn" onclick="switchAdminTab('blocked')">Blocked Users</div>
             <div class="admin-tab" id="tabProductsBtn" onclick="switchAdminTab('products')">Products List</div>
         </div>
 
         <div id="adminUsersTab">
+            <input type="text" id="adminUserSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search user by name or phone...">
             <table>
-                <thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Action</th></tr></thead>
+                <thead><tr><th>DP</th><th>Name</th><th>Phone</th><th>City</th><th>Actions</th></tr></thead>
                 <tbody id="adminUsersList"></tbody>
             </table>
         </div>
 
-        <div id="adminProductsTab" style="display: none;">
+        <div id="adminBlockedTab" style="display: none;">
+            <input type="text" id="adminBlockedSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search blocked phone/user...">
             <table>
-                <thead><tr><th>Photo</th><th>Title</th><th>Price</th><th>Action</th></tr></thead>
+                <thead><tr><th>Phone / Ghost Record</th><th>Action</th></tr></thead>
+                <tbody id="adminBlockedList"></tbody>
+            </table>
+        </div>
+
+        <div id="adminProductsTab" style="display: none;">
+            <input type="text" id="adminProductSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search product by title, city or uploader...">
+            <table>
+                <thead><tr><th>Photo</th><th>Title & Price</th><th>Uploader</th><th>Action</th></tr></thead>
                 <tbody id="adminProductsList"></tbody>
             </table>
         </div>
@@ -409,6 +427,7 @@
         let currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
         let products = [];
         let users = [];
+        let blockedPhones = JSON.parse(localStorage.getItem('pb_blocked_phones')) || [];
         let uploadedImagesBase64 = [];
         let tempDpBase64 = "";
         let logoClickCount = 0;
@@ -558,6 +577,11 @@
                 openUserProfileModal();
                 return;
             }
+            if(blockedPhones.includes(cleanPhoneNumber(currentUser.phone))) {
+                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                handleLogoutLocally();
+                return;
+            }
             document.getElementById('sellModal').style.display = 'flex';
         }
 
@@ -599,9 +623,10 @@
 
         async function fetchData() {
             try {
-                const [prodRes, userRes] = await Promise.all([
+                const [prodRes, userRes, blockRes] = await Promise.all([
                     fetch(`${DB_BASE_URL}/products.json`),
-                    fetch(`${DB_BASE_URL}/users.json`)
+                    fetch(`${DB_BASE_URL}/users.json`),
+                    fetch(`${DB_BASE_URL}/blocked.json`)
                 ]);
                 
                 const prodData = await prodRes.json();
@@ -620,10 +645,25 @@
                     });
                 }
 
+                const blockData = await blockRes.json();
+                blockedPhones = [];
+                if (blockData) {
+                    Object.keys(blockData).forEach(key => {
+                        blockedPhones.push(blockData[key]);
+                    });
+                }
+                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
+
                 if (currentUser) {
+                    const cleanUserPhone = cleanPhoneNumber(currentUser.phone);
+                    if (blockedPhones.includes(cleanUserPhone)) {
+                        alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                        handleLogoutLocally();
+                        return;
+                    }
                     const userExists = users.some(u => u.id === currentUser.id);
                     if (!userExists) {
-                        alert("Aapka account admin ne delete kar diya hai!");
+                        alert("Aapka account delete kar diya gaya hai!");
                         handleLogoutLocally();
                     }
                 }
@@ -771,16 +811,25 @@
         async function handleLogin(e) {
             e.preventDefault();
             const phone = cleanPhoneNumber(document.getElementById('loginPhone').value);
+            
+            if(blockedPhones.includes(phone)) {
+                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                return;
+            }
+
             const btn = document.getElementById('loginSubmitBtn');
-            btn.innerText = "Logging in...";
+            btn.innerText = "Checking...";
             btn.disabled = true;
 
             try {
+                // Fresh fetch users list to make sure we have accurate data
                 const res = await fetch(`${DB_BASE_URL}/users.json`);
                 const data = await res.json();
                 let found = null;
+                users = [];
                 if(data) {
                     Object.keys(data).forEach(k => {
+                        users.push({ id: k, ...data[k] });
                         if(cleanPhoneNumber(data[k].phone) === phone) {
                             found = { id: k, ...data[k] };
                         }
@@ -810,20 +859,49 @@
             const name = document.getElementById('regName').value;
             const city = document.getElementById('regCity').value;
             const phone = cleanPhoneNumber(document.getElementById('regPhone').value);
-            const btn = document.getElementById('regSubmitBtn');
             
-            btn.innerText = "Creating Account...";
+            if(blockedPhones.includes(phone)) {
+                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                return;
+            }
+
+            const btn = document.getElementById('regSubmitBtn');
+            btn.innerText = "Checking...";
             btn.disabled = true;
 
-            const newUser = { name, city, phone, dp: tempDpBase64 };
-
             try {
-                const res = await fetch(`${DB_BASE_URL}/users.json`, {
+                // Fresh fetch to ensure double safety against duplicate registrations
+                const res = await fetch(`${DB_BASE_URL}/users.json`);
+                const data = await res.json();
+                let alreadyExists = false;
+                users = [];
+                if(data) {
+                    Object.keys(data).forEach(k => {
+                        users.push({ id: k, ...data[k] });
+                        if(cleanPhoneNumber(data[k].phone) === phone) {
+                            alreadyExists = true;
+                        }
+                    });
+                }
+
+                if(alreadyExists) {
+                    alert("Is number par account pehle se bana hua hai! Baray meharbani Login karein.");
+                    switchAuthTab('login');
+                    document.getElementById('loginPhone').value = phone;
+                    btn.innerText = "Create New Account";
+                    btn.disabled = false;
+                    return;
+                }
+
+                btn.innerText = "Creating Account...";
+                const newUser = { name, city, phone, dp: tempDpBase64 };
+
+                const postRes = await fetch(`${DB_BASE_URL}/users.json`, {
                     method: 'POST',
                     body: JSON.stringify(newUser)
                 });
-                const data = await res.json();
-                currentUser = { id: data.name, ...newUser };
+                const postData = await postRes.json();
+                currentUser = { id: postData.name, ...newUser };
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('authModal');
@@ -862,17 +940,23 @@
             localStorage.removeItem('pb_current_user');
             currentUser = null;
             updateUserPill();
+            closeModal('editProfileModal');
             location.reload();
         }
 
         function handleLogout() {
             handleLogoutLocally();
-            closeModal('editProfileModal');
         }
 
         async function handlePostItem(e) {
             e.preventDefault();
             if(!currentUser) return;
+
+            if(blockedPhones.includes(cleanPhoneNumber(currentUser.phone))) {
+                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                handleLogoutLocally();
+                return;
+            }
 
             if(uploadedImagesBase64.length === 0) {
                 alert("Bhai, kam az kam 1 tasveer (photo) select karna lazmi hai!");
@@ -890,6 +974,7 @@
                 desc: document.getElementById('postDesc').value,
                 city: currentUser.city,
                 phone: currentUser.phone,
+                uploaderName: currentUser.name,
                 images: uploadedImagesBase64
             };
 
@@ -949,32 +1034,96 @@
         }
 
         function switchAdminTab(tab) {
+            document.getElementById('adminUsersTab').style.display = 'none';
+            document.getElementById('adminBlockedTab').style.display = 'none';
+            document.getElementById('adminProductsTab').style.display = 'none';
+            document.getElementById('tabUsersBtn').classList.remove('active');
+            document.getElementById('tabBlockedBtn').classList.remove('active');
+            document.getElementById('tabProductsBtn').classList.remove('active');
+
             if(tab === 'users') {
                 document.getElementById('adminUsersTab').style.display = 'block';
-                document.getElementById('adminProductsTab').style.display = 'none';
                 document.getElementById('tabUsersBtn').classList.add('active');
-                document.getElementById('tabProductsBtn').classList.remove('active');
+            } else if(tab === 'blocked') {
+                document.getElementById('adminBlockedTab').style.display = 'block';
+                document.getElementById('tabBlockedBtn').classList.add('active');
             } else {
                 document.getElementById('adminProductsTab').style.display = 'block';
-                document.getElementById('adminUsersTab').style.display = 'none';
                 document.getElementById('tabProductsBtn').classList.add('active');
-                document.getElementById('tabUsersBtn').classList.remove('active');
             }
         }
 
         function renderAdminData() {
+            const uSearch = document.getElementById('adminUserSearch').value.toLowerCase();
             const uList = document.getElementById('adminUsersList');
             if(uList) {
                 uList.innerHTML = '';
-                users.forEach(u => {
-                    uList.innerHTML += `<tr><td>${u.name || ''}</td><td>${u.phone || ''}</td><td>${u.city || ''}</td><td><button class="btn-delete" onclick="adminDeleteUser('${u.id}')">Delete</button></td></tr>`;
+                let activeUsers = users.filter(u => !blockedPhones.includes(cleanPhoneNumber(u.phone)));
+                let filteredUsers = activeUsers.filter(u => 
+                    (u.name && u.name.toLowerCase().includes(uSearch)) || 
+                    (u.phone && u.phone.includes(uSearch))
+                );
+
+                filteredUsers.forEach(u => {
+                    let cleanPhone = cleanPhoneNumber(u.phone);
+                    let dpImg = u.dp || 'https://via.placeholder.com/35?text=User';
+                    
+                    uList.innerHTML += `
+                        <tr>
+                            <td><img src="${dpImg}" style="width:35px;height:35px;border-radius:50%;object-fit:cover;"></td>
+                            <td><b>${u.name || ''}</b></td>
+                            <td>${u.phone || ''}</td>
+                            <td>${u.city || ''}</td>
+                            <td>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button class="btn-block" onclick="adminBlockUser('${cleanPhone}')">Block</button>
+                                    <button class="btn-delete" onclick="adminDeleteUser('${u.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>`;
                 });
             }
 
+            const bSearch = document.getElementById('adminBlockedSearch').value.toLowerCase();
+            const bList = document.getElementById('adminBlockedList');
+            if(bList) {
+                bList.innerHTML = '';
+                let filteredBlocked = blockedPhones.filter(phone => phone.toLowerCase().includes(bSearch));
+
+                if(filteredBlocked.length === 0) {
+                    bList.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#777; padding:20px;">Koi blocked number nahi mila.</td></tr>`;
+                }
+
+                filteredBlocked.forEach(phone => {
+                    let matchedUser = users.find(u => cleanPhoneNumber(u.phone) === phone);
+                    let displayName = matchedUser ? `${matchedUser.name} (${phone})` : `Ghost Number: ${phone}`;
+                    
+                    bList.innerHTML += `
+                        <tr>
+                            <td><b>${displayName}</b></td>
+                            <td><button class="btn-unblock" onclick="adminUnblockUser('${phone}')">Unblock</button></td>
+                        </tr>`;
+                });
+            }
+
+            const pSearch = document.getElementById('adminProductSearch').value.toLowerCase();
             const pList = document.getElementById('adminProductsList');
             if(pList) {
                 pList.innerHTML = '';
-                products.forEach(p => {
+                let filteredProducts = products.filter(p => {
+                    let uploaderName = p.uploaderName;
+                    if (!uploaderName && p.phone) {
+                        let matchedUser = users.find(u => cleanPhoneNumber(u.phone) === cleanPhoneNumber(p.phone));
+                        if (matchedUser) uploaderName = matchedUser.name;
+                    }
+                    uploaderName = uploaderName || 'Unknown Uploader';
+
+                    return (p.title && p.title.toLowerCase().includes(pSearch)) ||
+                           (uploaderName.toLowerCase().includes(pSearch)) ||
+                           (p.city && p.city.toLowerCase().includes(pSearch));
+                });
+
+                filteredProducts.slice().reverse().forEach(p => {
                     let img = '';
                     if (p.images && p.images.length > 0) {
                         img = p.images[0];
@@ -982,8 +1131,59 @@
                         img = p.image;
                     }
 
-                    pList.innerHTML += `<tr><td><img src="${img}" style="width:30px;height:30px;object-fit:cover;"></td><td>${p.title || ''}</td><td>Rs ${p.price || 0}</td><td><button class="btn-delete" onclick="adminDeleteProduct('${p.id}')">Delete</button></td></tr>`;
+                    let uploaderDisplay = p.uploaderName;
+                    if (!uploaderDisplay && p.phone) {
+                        let matchedUser = users.find(u => cleanPhoneNumber(u.phone) === cleanPhoneNumber(p.phone));
+                        if (matchedUser) uploaderDisplay = matchedUser.name;
+                    }
+                    uploaderDisplay = uploaderDisplay || 'Unknown Uploader';
+                    
+                    pList.innerHTML += `
+                        <tr>
+                            <td><img src="${img}" style="width:35px;height:35px;object-fit:cover;border-radius:4px;"></td>
+                            <td><b>${p.title || ''}</b><br><span style="color:var(--primary); font-weight:700;">Rs ${Number(p.price || 0).toLocaleString()}</span></td>
+                            <td><b>${uploaderDisplay}</b> <br><small style="color:#777;">${p.phone || ''}</small></td>
+                            <td><button class="btn-delete" onclick="adminDeleteProduct('${p.id}')">Delete</button></td>
+                        </tr>`;
                 });
+            }
+        }
+
+        async function adminBlockUser(phone) {
+            if(!confirm("Kya aap is user ko block karna chahte hain?")) return;
+            try {
+                await fetch(`${DB_BASE_URL}/blocked.json`, {
+                    method: 'POST',
+                    body: JSON.stringify(phone)
+                });
+                if(!blockedPhones.includes(phone)) blockedPhones.push(phone);
+                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
+
+                alert("User successfully block kar diya gaya hai!");
+                renderAdminData();
+            } catch(e) {
+                alert("Block failed!");
+            }
+        }
+
+        async function adminUnblockUser(phone) {
+            if(!confirm("Kya aap is number ko unblock karna chahte hain?")) return;
+            try {
+                const res = await fetch(`${DB_BASE_URL}/blocked.json`);
+                const data = await res.json();
+                if(data) {
+                    for(let key in data) {
+                        if(data[key] === phone) {
+                            await fetch(`${DB_BASE_URL}/blocked/${key}.json`, { method: 'DELETE' });
+                        }
+                    }
+                }
+                blockedPhones = blockedPhones.filter(p => p !== phone);
+                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
+                alert("Number unblock ho gaya hai ab aap account bana sakte hain!");
+                renderAdminData();
+            } catch(e) {
+                alert("Unblock failed!");
             }
         }
 
