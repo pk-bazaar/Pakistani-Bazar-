@@ -1,15 +1,26 @@
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('pwa-store').then((cache) => {
-      return cache.addAll(['./index.html']);
+const CACHE_NAME = 'pk-bazaar-v1';
+const assetsToCache = [
+  './index.html',
+  './manifest.json'
+];
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(assetsToCache);
     })
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
     })
   );
 });
