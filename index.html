@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pakistani Bazaar - Buy & Sell</title>
     
-    <!-- PWA Install Manifest Links -->
+    <!-- PWA Manifest & Theme -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#002f34">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
         :root {
@@ -299,7 +301,7 @@
         let logoClickCount = 0;
         let deferredPrompt = null;
 
-        // PWA INSTALL LOGIC
+        // PWA INSTALL TRIGGER LOGIC
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -788,7 +790,9 @@
             updateUserPill();
             fetchProducts();
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration Failed:', err));
+                navigator.serviceWorker.register('./sw.js')
+                    .then(() => console.log('Service Worker Registered'))
+                    .catch(err => console.log('SW Failed:', err));
             }
         };
     </script>
