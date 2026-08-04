@@ -334,4 +334,463 @@
                 const img = new Image();
                 img.src = e.target.result;
                 img.onload = () => {
-                    const
+                    const canvas = document.createElement('canvas');
+                    let width = img.width, height = img.height;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', quality));
+                };
+            };
+        }
+
+        function updateUserPill() {
+            const pill = document.getElementById('userPill');
+            if(currentUser) {
+                const dp = currentUser.dp || 'https://via.placeholder.com/60?text=User';
+                pill.innerHTML = `<img src="${dp}" class="user-dp-icon"> <span>${currentUser.name}</span>`;
+            } else {
+                pill.innerHTML = `<span>Guest (Login/Signup)</span>`;
+            }
+        }
+
+        async function verifyCurrentUserExists() {
+            if(!currentUser) return;
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users/${cleanPhoneNumber(currentUser.phone)}.json`);
+                const data = await res.json();
+                if(!data) {
+                    alert("Aapka account admin ne delete kar diya hai!");
+                    handleLogout();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        setInterval(verifyCurrentUserExists, 10000);
+
+        function openUserProfileModal() {
+            if(!currentUser) {
+                document.getElementById('authModal').style.display = 'flex';
+                switchAuthTab('login');
+            } else {
+                document.getElementById('editName').value = currentUser.name;
+                document.getElementById('editCity').value = currentUser.city;
+                document.getElementById('editPhone').value = currentUser.phone;
+                tempDpBase64 = currentUser.dp || "";
+                document.getElementById('editDpPreview').src = tempDpBase64 || 'https://via.placeholder.com/60?text=User';
+                document.getElementById('editProfileModal').style.display = 'flex';
+            }
+        }
+
+        function switchAuthTab(tab) {
+            document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login');
+            document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register');
+            document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('regForm').style.display = tab === 'register' ? 'block' : 'none';
+        }
+
+        function handleDpUpload(e, previewId) {
+            const file = e.target.files[0];
+            compressImage(file, 150, 0.7, (base64) => {
+                tempDpBase64 = base64;
+                document.getElementById(previewId).src = base64;
+            });
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const city = document.getElementById('regCity').value;
+            const phone = cleanPhoneNumber(document.getElementById('regPhone').value);
+
+            if(phone.length < 10) {
+                alert("Please enter a valid phone number!");
+                return;
+            }
+
+            const btn = document.getElementById('regSubmitBtn');
+            btn.innerText = "Creating...";
+            btn.disabled = true;
+
+            try {
+                const checkRes = await fetch(`${DB_BASE_URL}/users/${phone}.json`);
+                const existing = await checkRes.json();
+                if(existing) {
+                    alert("This phone number is already registered! Please login.");
+                    btn.innerText = "Create New Account";
+                    btn.disabled = false;
+                    return;
+                }
+
+                const userData = { name, city, phone, dp: tempDpBase64 };
+                await fetch(`${DB_BASE_URL}/users/${phone}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(userData)
+                });
+
+                currentUser = userData;
+                localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                updateUserPill();
+                closeModal('authModal');
+                alert("Account created successfully!");
+                fetchProducts();
+            } catch(err) {
+                alert("Error registering account!");
+            } finally {
+                btn.innerText = "Create New Account";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const phone = cleanPhoneNumber(document.getElementById('loginPhone').value);
+            const btn = document.getElementById('loginSubmitBtn');
+            btn.innerText = "Logging in...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${DB_BASE_URL}/users/${phone}.json`);
+                const user = await res.json();
+                if(!user) {
+                    alert("Account not found with this number! Please sign up first.");
+                    btn.innerText = "Login To Account";
+                    btn.disabled = false;
+                    return;
+                }
+
+                currentUser = user;
+                localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                updateUserPill();
+                closeModal('authModal');
+                alert("Logged in successfully!");
+                fetchProducts();
+                if(document.getElementById('tabSellContent').style.display !== 'none') {
+                    renderMyItems();
+                }
+            } catch(err) {
+                alert("Login failed!");
+            } finally {
+                btn.innerText = "Login To Account";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleEditProfile(e) {
+            e.preventDefault();
+            const name = document.getElementById('editName').value.trim();
+            const city = document.getElementById('editCity').value;
+            const phone = currentUser.phone;
+
+            const updatedUser = { name, city, phone, dp: tempDpBase64 };
+            try {
+                await fetch(`${DB_BASE_URL}/users/${cleanPhoneNumber(phone)}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name, city, dp: tempDpBase64 })
+                });
+                currentUser = updatedUser;
+                localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                updateUserPill();
+                closeModal('editProfileModal');
+                alert("Profile updated!");
+                fetchProducts();
+            } catch(err) {
+                alert("Failed to update profile");
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('pb_current_user');
+            updateUserPill();
+            closeModal('editProfileModal');
+            switchMainTab('buy');
+            fetchProducts();
+            alert("Logged out successfully!");
+        }
+
+        function switchMainTab(tab) {
+            document.getElementById('tabBuyBtn').classList.toggle('active', tab === 'buy');
+            document.getElementById('tabSellBtn').classList.toggle('active', tab === 'sell');
+            document.getElementById('tabBuyContent').style.display = tab === 'buy' ? 'block' : 'none';
+            document.getElementById('tabSellContent').style.display = tab === 'sell' ? 'block' : 'none';
+
+            if(tab === 'sell') {
+                if(!currentUser) {
+                    document.getElementById('authModal').style.display = 'flex';
+                    switchAuthTab('login');
+                    switchMainTab('buy');
+                } else {
+                    renderMyItems();
+                }
+            }
+        }
+
+        function openSellModal() {
+            if(!currentUser) {
+                document.getElementById('authModal').style.display = 'flex';
+                switchAuthTab('login');
+                return;
+            }
+            document.getElementById('sellForm').reset();
+            uploadedImagesBase64 = [];
+            document.getElementById('previewBox').innerHTML = "";
+            document.getElementById('sellModal').style.display = 'flex';
+        }
+
+        function handleProductImgUpload(e) {
+            const files = e.target.files;
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = "";
+            uploadedImagesBase64 = [];
+
+            for(let i=0; i<Math.min(files.length, 3); i++) {
+                compressImage(files[i], 600, 0.7, (base64) => {
+                    uploadedImagesBase64.push(base64);
+                    const img = document.createElement('img');
+                    img.src = base64;
+                    img.style.width = "50px";
+                    img.style.height = "50px";
+                    img.style.objectFit = "cover";
+                    img.style.borderRadius = "4px";
+                    previewBox.appendChild(img);
+                });
+            }
+        }
+
+        async function handlePostItem(e) {
+            e.preventDefault();
+            if(uploadedImagesBase64.length === 0) {
+                alert("Please select at least one photo!");
+                return;
+            }
+
+            const btn = document.getElementById('savePostBtn');
+            btn.innerText = "Posting...";
+            btn.disabled = true;
+
+            const newProduct = {
+                id: 'p_' + Date.now(),
+                title: document.getElementById('postTitle').value.trim(),
+                price: Number(document.getElementById('postPrice').value),
+                condition: document.getElementById('postCondition').value,
+                city: currentUser.city,
+                desc: document.getElementById('postDesc').value.trim(),
+                images: uploadedImagesBase64,
+                sellerName: currentUser.name,
+                sellerPhone: currentUser.phone,
+                timestamp: Date.now()
+            };
+
+            try {
+                await fetch(`${DB_BASE_URL}/products/${newProduct.id}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(newProduct)
+                });
+                closeModal('sellModal');
+                alert("Item posted successfully!");
+                fetchProducts();
+                switchMainTab('sell');
+            } catch(err) {
+                alert("Failed to post item");
+            } finally {
+                btn.innerText = "Post Item Now";
+                btn.disabled = false;
+            }
+        }
+
+        async function fetchProducts() {
+            try {
+                const res = await fetch(`${DB_BASE_URL}/products.json`);
+                const data = await res.json();
+                products = [];
+                if(data) {
+                    Object.keys(data).forEach(key => {
+                        products.push(data[key]);
+                    });
+                }
+                products.sort((a,b) => b.timestamp - a.timestamp);
+                filterProducts();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function filterProducts() {
+            const city = document.getElementById('cityFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('productGrid');
+            const empty = document.getElementById('emptyState');
+
+            const filtered = products.filter(p => {
+                const matchesCity = (city === 'ALL' || p.city === city);
+                const matchesSearch = p.title.toLowerCase().includes(search) || p.desc.toLowerCase().includes(search);
+                return matchesCity && matchesSearch;
+            });
+
+            grid.innerHTML = "";
+            if(filtered.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            filtered.forEach(p => {
+                const img = (p.images && p.images[0]) ? p.images[0] : 'https://via.placeholder.com/220x160?text=No+Image';
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${img}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-price">Rs ${p.price.toLocaleString()}</div>
+                        <div class="card-title">${p.title}</div>
+                        <div class="card-badge">${p.condition} • ${p.city}</div>
+                        <a href="https://wa.me/92${p.sellerPhone.replace(/^0/, '')}?text=Hi,%20I%20am%20interested%20in%20your%20ad:%20${encodeURIComponent(p.title)}" target="_blank" class="btn-whatsapp">💬 Chat on WhatsApp</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function renderMyItems() {
+            if(!currentUser) return;
+            const grid = document.getElementById('myItemsGrid');
+            const empty = document.getElementById('myEmptyState');
+            
+            const myProducts = products.filter(p => cleanPhoneNumber(p.sellerPhone) === cleanPhoneNumber(currentUser.phone));
+            
+            grid.innerHTML = "";
+            if(myProducts.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            myProducts.forEach(p => {
+                const img = (p.images && p.images[0]) ? p.images[0] : 'https://via.placeholder.com/220x160?text=No+Image';
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${img}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-price">Rs ${p.price.toLocaleString()}</div>
+                        <div class="card-title">${p.title}</div>
+                        <div class="card-badge">${p.condition}</div>
+                        <button class="btn-delete" onclick="deleteMyProduct('${p.id}')">🗑️ Delete Ad</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function deleteMyProduct(id) {
+            if(!confirm("Are you sure you want to delete this ad?")) return;
+            try {
+                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+                alert("Ad deleted successfully!");
+                await fetchProducts();
+                renderMyItems();
+            } catch(e) {
+                alert("Failed to delete ad");
+            }
+        }
+
+        function handleLogoClick() {
+            logoClickCount++;
+            if(logoClickCount >= 5) {
+                logoClickCount = 0;
+                document.getElementById('adminAuthModal').style.display = 'flex';
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPass').value;
+            if(pass === "za12##id34##") {
+                closeModal('adminAuthModal');
+                document.getElementById('adminPass').value = "";
+                openAdminPanel();
+            } else {
+                alert("Incorrect Admin Password!");
+            }
+        }
+
+        async function openAdminPanel() {
+            document.getElementById('mainAppContainer').style.display = 'none';
+            document.getElementById('bottomNav').style.display = 'none';
+            document.getElementById('adminView').style.display = 'block';
+            loadAdminData();
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminView').style.display = 'none';
+            document.getElementById('mainAppContainer').style.display = 'block';
+            document.getElementById('bottomNav').style.display = 'flex';
+        }
+
+        function switchAdminTab(tab) {
+            document.getElementById('tabUsersBtn').classList.toggle('active', tab === 'users');
+            document.getElementById('tabProductsBtn').classList.toggle('active', tab === 'products');
+            document.getElementById('adminUsersTab').style.display = tab === 'users' ? 'block' : 'none';
+            document.getElementById('adminProductsTab').style.display = tab === 'products' ? 'block' : 'none';
+        }
+
+        async function loadAdminData() {
+            try {
+                const uRes = await fetch(`${DB_BASE_URL}/users.json`);
+                const uData = await uRes.json();
+                users = [];
+                if(uData) {
+                    Object.keys(uData).forEach(k => users.push(uData[k]));
+                }
+
+                const uList = document.getElementById('adminUsersList');
+                uList.innerHTML = "";
+                users.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${u.name}</td><td>${u.phone}</td><td>${u.city}</td><td><button class="btn-delete" onclick="adminDeleteUser('${u.phone}')">Delete</button></td>`;
+                    uList.appendChild(tr);
+                });
+
+                const pList = document.getElementById('adminProductsList');
+                pList.innerHTML = "";
+                products.forEach(p => {
+                    const img = (p.images && p.images[0]) ? p.images[0] : '';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><img src="${img}" style="width:35px;height:35px;object-fit:cover;border-radius:4px;"></td><td>${p.title}</td><td>Rs ${p.price}</td><td><button class="btn-delete" onclick="adminDeleteProduct('${p.id}')">Delete</button></td>`;
+                    pList.appendChild(tr);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function adminDeleteUser(phone) {
+            if(!confirm("Delete this user?")) return;
+            await fetch(`${DB_BASE_URL}/users/${cleanPhoneNumber(phone)}.json`, { method: 'DELETE' });
+            loadAdminData();
+        }
+
+        async function adminDeleteProduct(id) {
+            if(!confirm("Delete this product?")) return;
+            await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
+            loadAdminData();
+            fetchProducts();
+        }
+
+        window.onload = () => {
+            updateUserPill();
+            fetchProducts();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration Failed:', err));
+            }
+        };
+    </script>
+</body>
+</html>
