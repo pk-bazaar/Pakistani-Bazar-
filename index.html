@@ -6,6 +6,7 @@
     <title>Pakistani Bazaar - Buy & Sell</title>
     
     <!-- PWA Manifest & Theme -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#002f34">
 
     <style>
@@ -27,7 +28,10 @@
         header { background-color: var(--primary); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         
         .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .logo { font-size: 20px; font-weight: 800; color: var(--accent); text-decoration: none; cursor: pointer; user-select: none; }
+        
+        .logo-area { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; user-select: none; }
+        .logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
+        .logo { font-size: 20px; font-weight: 800; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 6px; }
         .logo span { color: #ffffff; }
 
         .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -87,7 +91,6 @@
         .dp-preview-box { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; background: #f0f4f8; padding: 10px; border-radius: 8px; }
         .dp-preview-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: #fff; }
 
-        /* ADMIN VIEW PANEL STYLING */
         .admin-view { display: none; background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin: 20px auto; width: 100%; max-width: 1200px; }
         .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .admin-tab { padding: 8px 16px; background: #eee; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
@@ -106,7 +109,11 @@
 
     <header>
         <div class="header-container">
-            <div class="logo" onclick="handleLogoClick()">Pakistani<span>Bazaar</span></div>
+            <!-- Yahan logo ki image add kar di hai -->
+            <div class="logo-area" onclick="handleLogoClick()">
+                <img src="https://i.postimg.cc/fWK4szSF/IMG-20260804-WA6362.jpg" alt="Logo" class="logo-img">
+                <div class="logo">Pakistani<span>Bazaar</span></div>
+            </div>
             <div class="header-actions">
                 <button id="installBtn" class="install-btn" onclick="installApp()">📲 Install App</button>
                 <div id="userPill" class="user-pill" onclick="openUserProfileModal()"><span>Guest (Login)</span></div>
@@ -329,7 +336,6 @@
             fetchData();
         };
 
-        // PWA Install Event Handler
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -509,7 +515,6 @@
                     });
                 }
 
-                // Check if current logged-in user still exists in database
                 if (currentUser) {
                     const userExists = users.some(u => u.id === currentUser.id);
                     if (!userExists) {
@@ -798,15 +803,15 @@
 
         function switchAdminTab(tab) {
             if(tab === 'users') {
-                document.getElementById('tabUsersBtn').classList.add('active');
-                document.getElementById('tabProductsBtn').classList.remove('active');
                 document.getElementById('adminUsersTab').style.display = 'block';
                 document.getElementById('adminProductsTab').style.display = 'none';
+                document.getElementById('tabUsersBtn').classList.add('active');
+                document.getElementById('tabProductsBtn').classList.remove('active');
             } else {
-                document.getElementById('tabProductsBtn').classList.add('active');
-                document.getElementById('tabUsersBtn').classList.remove('active');
                 document.getElementById('adminProductsTab').style.display = 'block';
                 document.getElementById('adminUsersTab').style.display = 'none';
+                document.getElementById('tabProductsBtn').classList.add('active');
+                document.getElementById('tabUsersBtn').classList.remove('active');
             }
         }
 
