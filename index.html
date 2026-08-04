@@ -291,19 +291,6 @@
     </div>
 
     <script>
-        // SERVICE WORKER REGISTRATION FOR PWA INSTALL
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => {
-                        console.log('Service Worker Registered Successfully:', reg.scope);
-                    })
-                    .catch((err) => {
-                        console.log('Service Worker Registration Failed:', err);
-                    });
-            });
-        }
-
         const DB_BASE_URL = "https://pakistani-bazaar-za-default-rtdb.firebaseio.com";
 
         let currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
@@ -330,4 +317,19 @@
                 console.log('App Installed Successfully');
             }
             deferredPrompt = null;
-            do
+            document.getElementById('installAppBtn').style.display = 'none';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function cleanPhoneNumber(phone) {
+            return phone ? phone.replace(/[^0-9]/g, '') : '';
+        }
+
+        function compressImage(file, maxWidth, quality, callback) {
+            if (!file) return callback("");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
