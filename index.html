@@ -473,10 +473,14 @@
         let tempDpBase64 = "";
         let logoClickCount = 0;
         let popupCallback = null;
+        let sessionListenerRef = null;
 
         window.onload = function() {
             updateUserPill();
             initRealtimeListeners();
+            if (currentUser) {
+                startSessionListener();
+            }
         };
 
         // Modern Custom Popup Functions
@@ -517,6 +521,30 @@
                 popupCallback(value);
                 popupCallback = null;
             }
+        }
+
+        function startSessionListener() {
+            if (!currentUser || !currentUser.id) return;
+            
+            if (sessionListenerRef) {
+                sessionListenerRef.off();
+            }
+
+            sessionListenerRef = db.ref(`users/${currentUser.id}`);
+            sessionListenerRef.on('value', async (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && currentUser) {
+                    if (userData.sessionId && userData.sessionId !== currentUser.sessionId) {
+                        sessionListenerRef.off();
+                        localStorage.removeItem('pb_current_user');
+                        currentUser = null;
+                        updateUserPill();
+                        
+                        await showCustomAlert("Aapka account kisi aur mobile mein login kar liya gaya hai!", "Session Expired", "⚠️");
+                        location.reload();
+                    }
+                }
+            });
         }
 
         function toggleSidebar(open) {
@@ -908,10 +936,18 @@
                     if(found.password && found.password !== pass) {
                         await showCustomAlert("Ghalat password! Baray meharbani theek password dein.", "Wrong Password", "❌");
                     } else {
+                        // Naya Session ID generate karo
+                        const newSessionId = 'sess_' + Date.now() + Math.random().toString(36).substring(2);
+                        found.sessionId = newSessionId;
+
+                        // Database mein update karo
+                        await db.ref(`users/${found.id}`).update({ sessionId: newSessionId });
+
                         currentUser = found;
                         localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                         updateUserPill();
                         closeModal('authModal');
+                        startSessionListener();
                         await showCustomAlert("Login successful!", "Welcome Back", "🎉");
                     }
                 } else {
@@ -964,7 +1000,8 @@
                 }
 
                 btn.innerText = "Creating Account...";
-                const newUser = { name, city, phone, password, dp: tempDpBase64 };
+                const newSessionId = 'sess_' + Date.now() + Math.random().toString(36).substring(2);
+                const newUser = { name, city, phone, password, dp: tempDpBase64, sessionId: newSessionId };
 
                 const newRef = db.ref('users').push();
                 await newRef.set(newUser);
@@ -973,6 +1010,7 @@
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('authModal');
+                startSessionListener();
                 await showCustomAlert("Account created successfully!", "Success", "🎉");
             } catch(err) {
                 await showCustomAlert("Registration failed!", "Error", "❌");
@@ -1004,6 +1042,7 @@
         }
 
         function handleLogoutLocally() {
+            if (sessionListenerRef) sessionListenerRef.off();
             localStorage.removeItem('pb_current_user');
             currentUser = null;
             updateUserPill();
