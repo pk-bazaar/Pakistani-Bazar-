@@ -44,7 +44,7 @@
 
         .header-actions { display: flex; align-items: center; gap: 10px; }
 
-        .install-btn { background: var(--accent); color: var(--primary); border: none; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; cursor: pointer; display: none; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .install-btn { background: var(--accent); color: var(--primary); border: none; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.2s; }
         .install-btn:hover { background: #1bc7bd; }
 
         .user-pill { background: rgba(255,255,255,0.12); padding: 5px 12px; border-radius: 20px; font-size: 13px; border: 1px solid rgba(255,255,255,0.25); color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
@@ -159,7 +159,7 @@
         .custom-popup-box { background: white; border-radius: 14px; width: 100%; max-width: 360px; padding: 24px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,0.25); transform: scale(0.9); animation: scaleUp 0.2s ease forwards; border-top: 4px solid var(--accent); }
         .custom-popup-icon { font-size: 38px; margin-bottom: 12px; }
         .custom-popup-title { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
-        .custom-popup-msg { font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+        .custom-popup-msg { font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5; text-align: left; }
         .custom-popup-btns { display: flex; gap: 10px; }
         .custom-popup-btn { flex: 1; padding: 11px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: opacity 0.2s; }
         .custom-popup-btn:hover { opacity: 0.9; }
@@ -212,6 +212,9 @@
                 <span class="icon">🏷️</span> My Selling Items
             </a>
             <div class="sidebar-divider"></div>
+            <a href="#" class="sidebar-item" onclick="toggleSidebar(false); installApp();">
+                <span class="icon">📲</span> Install App (PWA)
+            </a>
             <a href="https://wa.me/923284104285?text=Salam!%20Mujhe%20Pakistani%20Bazaar%20website%20ke%20baray%20mein%20baat%20karni%20hai." target="_blank" class="sidebar-item" onclick="toggleSidebar(false)">
                 <span class="icon" style="color: var(--success);">💬</span> Contact with Admin
             </a>
@@ -482,20 +485,21 @@
         window.onload = function() {
             updateUserPill();
             initRealtimeListeners();
+            // Hamesha header mein install button dikhayen ga
+            const installBtn = document.getElementById('installBtn');
+            if(installBtn) installBtn.style.display = 'flex';
         };
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            const installBtn = document.getElementById('installBtn');
-            if(installBtn) installBtn.style.display = 'flex';
         });
 
         // Modern Custom Popup Functions
         function showCustomAlert(message, title = "Pakistani Bazaar", icon = "📢") {
             return new Promise((resolve) => {
                 document.getElementById('popupTitle').innerText = title;
-                document.getElementById('popupMsg').innerText = message;
+                document.getElementById('popupMsg').innerHTML = message;
                 document.getElementById('popupIcon').innerText = icon;
                 
                 const btnsDiv = document.getElementById('popupBtns');
@@ -531,17 +535,20 @@
             }
         }
 
-        function installApp() {
+        async function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('installBtn').style.display = 'none';
-                    }
-                    deferredPrompt = null;
-                });
+                const choiceResult = await deferredPrompt.userChoice;
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
             } else {
-                showCustomAlert("App pehle se installed hai ya browser support nahi karta!", "Info", "ℹ️");
+                // Agar automatic prompt available nahi hai to browser ka manual menu guide show kar do
+                let guideMsg = `<b>App Install Karne ka Tareeqa:</b><br><br>` +
+                               `1. <b>Google Chrome / Android:</b> Upar right corner par <b>3 dots (...)</b> par click karein aur <b>"Install app"</b> ya <b>"Add to Home screen"</b> par tap karein.<br><br>` +
+                               `2. <b>iPhone (Safari):</b> Neeche share icon par click karke <b>"Add to Home Screen"</b> select karein.`;
+                await showCustomAlert(guideMsg, "App Installation Guide", "📲");
             }
         }
 
