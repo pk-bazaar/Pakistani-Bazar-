@@ -44,10 +44,6 @@
 
         .header-actions { display: flex; align-items: center; gap: 10px; }
 
-        /* Install Button Enabled */
-        .install-btn { background: var(--accent); color: var(--primary); border: none; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-        .install-btn:hover { background: #1bc7bd; }
-
         .user-pill { background: rgba(255,255,255,0.12); padding: 5px 12px; border-radius: 20px; font-size: 13px; border: 1px solid rgba(255,255,255,0.25); color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
         .user-pill:hover { background: rgba(255,255,255,0.2); }
         .user-dp-icon { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent); }
@@ -191,7 +187,6 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button id="installBtn" class="install-btn" onclick="installApp()">📲 Install App</button>
                 <div id="userPill" class="user-pill" onclick="openUserProfileModal()"><span>Guest (Login)</span></div>
             </div>
         </div>
@@ -477,18 +472,12 @@
         let uploadedImagesBase64 = [];
         let tempDpBase64 = "";
         let logoClickCount = 0;
-        let deferredPrompt = null;
         let popupCallback = null;
 
         window.onload = function() {
             updateUserPill();
             initRealtimeListeners();
         };
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
 
         // Modern Custom Popup Functions
         function showCustomAlert(message, title = "Pakistani Bazaar", icon = "📢") {
@@ -527,20 +516,6 @@
             if(popupCallback) {
                 popupCallback(value);
                 popupCallback = null;
-            }
-        }
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                showCustomAlert("App install karne ke liye browser menu (...) se 'Add to Home screen' ya 'Install app' par click karein!", "App Install Guide", "📲");
             }
         }
 
