@@ -172,6 +172,10 @@
 
     <!-- Adsterra Social Bar Script -->
     <script src="https://pl29744814.effectivecpmnetwork.com/92/29/ae/9229aebafaeada61d93beb47f1568ee0.js"></script>
+    
+    <!-- Firebase SDK (Compat Version for Realtime DB Listeners) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
@@ -284,7 +288,7 @@
         <div id="adminUsersTab">
             <input type="text" id="adminUserSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search user by name or phone...">
             <table>
-                <thead><tr><th>DP</th><th>Name</th><th>Phone</th><th>City</th><th>Actions</th></tr></thead>
+                <thead><tr><th>DP</th><th>Name & City</th><th>Phone</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody id="adminUsersList"></tbody>
             </table>
         </div>
@@ -336,6 +340,10 @@
                     <label>Registered Phone Number *</label>
                     <input type="tel" id="loginPhone" placeholder="03001234567" required>
                 </div>
+                <div class="form-group">
+                    <label>Account Password *</label>
+                    <input type="password" id="loginPass" placeholder="Apna password dein" required>
+                </div>
                 <button type="submit" class="btn-submit" id="loginSubmitBtn">Login To Account</button>
             </form>
 
@@ -362,6 +370,10 @@
                     <label>WhatsApp Number *</label>
                     <input type="tel" id="regPhone" placeholder="03001234567" required>
                     <span class="warning-text">⚠️ Apna asli WhatsApp number dein, kyunke cheez bechte waqt ishi number par rabta kiya jaye ga.</span>
+                </div>
+                <div class="form-group">
+                    <label>Create Secret Password *</label>
+                    <input type="password" id="regPass" placeholder="Koi mazboot password rakhein" required>
                 </div>
                 <button type="submit" class="btn-submit" id="regSubmitBtn">Create New Account</button>
             </form>
@@ -451,6 +463,12 @@
     <script>
         const DB_BASE_URL = "https://pakistani-bazaar-za-default-rtdb.firebaseio.com";
 
+        // Firebase Realtime DB Initialization
+        firebase.initializeApp({
+            databaseURL: DB_BASE_URL
+        });
+        const db = firebase.database();
+
         let currentUser = JSON.parse(localStorage.getItem('pb_current_user')) || null;
         let products = [];
         let users = [];
@@ -463,7 +481,7 @@
 
         window.onload = function() {
             updateUserPill();
-            fetchData();
+            initRealtimeListeners();
         };
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -689,57 +707,71 @@
             });
         }
 
-        async function fetchData() {
-            try {
-                const [prodRes, userRes, blockRes] = await Promise.all([
-                    fetch(`${DB_BASE_URL}/products.json`),
-                    fetch(`${DB_BASE_URL}/users.json`),
-                    fetch(`${DB_BASE_URL}/blocked.json`)
-                ]);
-                
-                const prodData = await prodRes.json();
+        // Realtime Listeners (No Reload Needed for Anyone!)
+        function initRealtimeListeners() {
+            // Products Listener
+            db.ref('products').on('value', (snapshot) => {
+                const data = snapshot.val();
                 products = [];
-                if (prodData) {
-                    Object.keys(prodData).forEach(key => {
-                        products.push({ id: key, ...prodData[key] });
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        products.push({ id: key, ...data[key] });
+                    });
+                }
+                filterProducts();
+                renderMyItems();
+                if(document.getElementById('adminView').style.display === 'block') {
+                    renderAdminData();
+                }
+            });
+
+            // Users Listener
+            db.ref('users').on('value', (snapshot) => {
+                const data = snapshot.val();
+                users = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        users.push({ id: key, ...data[key] });
                     });
                 }
                 
-                const userData = await userRes.json();
-                users = [];
-                if (userData) {
-                    Object.keys(userData).forEach(key => {
-                        users.push({ id: key, ...userData[key] });
-                    });
-                }
-
-                const blockData = await blockRes.json();
-                blockedPhones = [];
-                if (blockData) {
-                    Object.keys(blockData).forEach(key => {
-                        blockedPhones.push(blockData[key]);
-                    });
-                }
-                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
-
                 if (currentUser) {
                     const cleanUserPhone = cleanPhoneNumber(currentUser.phone);
                     if (blockedPhones.includes(cleanUserPhone)) {
-                        await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
+                        showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
                         handleLogoutLocally();
                         return;
                     }
                     const userExists = users.some(u => u.id === currentUser.id);
                     if (!userExists) {
-                        await showCustomAlert("Aapka account delete kar diya gaya hai!", "Account Deleted", "❌");
+                        showCustomAlert("Aapka account delete kar diya gaya hai!", "Account Deleted", "❌");
                         handleLogoutLocally();
                     }
                 }
+                if(document.getElementById('adminView').style.display === 'block') {
+                    renderAdminData();
+                }
+            });
+
+            // Blocked Phones Listener
+            db.ref('blocked').on('value', (snapshot) => {
+                const data = snapshot.val();
+                blockedPhones = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        blockedPhones.push(data[key]);
+                    });
+                }
+                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
                 
-                filterProducts();
-            } catch (e) {
-                console.log("Database connection offline/error:", e);
-            }
+                if (currentUser && blockedPhones.includes(cleanPhoneNumber(currentUser.phone))) {
+                    showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
+                    handleLogoutLocally();
+                }
+                if(document.getElementById('adminView').style.display === 'block') {
+                    renderAdminData();
+                }
+            });
         }
 
         function filterProducts() {
@@ -879,6 +911,7 @@
         async function handleLogin(e) {
             e.preventDefault();
             const phone = cleanPhoneNumber(document.getElementById('loginPhone').value);
+            const pass = document.getElementById('loginPass').value;
             
             if(blockedPhones.includes(phone)) {
                 await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
@@ -890,13 +923,11 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch(`${DB_BASE_URL}/users.json`);
-                const data = await res.json();
+                const snapshot = await db.ref('users').once('value');
+                const data = snapshot.val();
                 let found = null;
-                users = [];
                 if(data) {
                     Object.keys(data).forEach(k => {
-                        users.push({ id: k, ...data[k] });
                         if(cleanPhoneNumber(data[k].phone) === phone) {
                             found = { id: k, ...data[k] };
                         }
@@ -904,11 +935,15 @@
                 }
 
                 if(found) {
-                    currentUser = found;
-                    localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
-                    updateUserPill();
-                    closeModal('authModal');
-                    await showCustomAlert("Login successful!", "Welcome Back", "🎉");
+                    if(found.password && found.password !== pass) {
+                        await showCustomAlert("Ghalat password! Baray meharbani theek password dein.", "Wrong Password", "❌");
+                    } else {
+                        currentUser = found;
+                        localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
+                        updateUserPill();
+                        closeModal('authModal');
+                        await showCustomAlert("Login successful!", "Welcome Back", "🎉");
+                    }
                 } else {
                     await showCustomAlert("Yeh number register nahi hai! Pehle Sign Up karein.", "Not Found", "ℹ️");
                     switchAuthTab('register');
@@ -926,6 +961,7 @@
             const name = document.getElementById('regName').value;
             const city = document.getElementById('regCity').value;
             const phone = cleanPhoneNumber(document.getElementById('regPhone').value);
+            const password = document.getElementById('regPass').value;
             
             if(blockedPhones.includes(phone)) {
                 await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
@@ -937,13 +973,11 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch(`${DB_BASE_URL}/users.json`);
-                const data = await res.json();
+                const snapshot = await db.ref('users').once('value');
+                const data = snapshot.val();
                 let alreadyExists = false;
-                users = [];
                 if(data) {
                     Object.keys(data).forEach(k => {
-                        users.push({ id: k, ...data[k] });
                         if(cleanPhoneNumber(data[k].phone) === phone) {
                             alreadyExists = true;
                         }
@@ -960,19 +994,16 @@
                 }
 
                 btn.innerText = "Creating Account...";
-                const newUser = { name, city, phone, dp: tempDpBase64 };
+                const newUser = { name, city, phone, password, dp: tempDpBase64 };
 
-                const postRes = await fetch(`${DB_BASE_URL}/users.json`, {
-                    method: 'POST',
-                    body: JSON.stringify(newUser)
-                });
-                const postData = await postRes.json();
-                currentUser = { id: postData.name, ...newUser };
+                const newRef = db.ref('users').push();
+                await newRef.set(newUser);
+                
+                currentUser = { id: newRef.key, ...newUser };
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('authModal');
                 await showCustomAlert("Account created successfully!", "Success", "🎉");
-                fetchData();
             } catch(err) {
                 await showCustomAlert("Registration failed!", "Error", "❌");
             }
@@ -988,15 +1019,15 @@
             currentUser.dp = tempDpBase64;
 
             try {
-                await fetch(`${DB_BASE_URL}/users/${currentUser.id}.json`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ name: currentUser.name, city: currentUser.city, dp: currentUser.dp })
+                await db.ref(`users/${currentUser.id}`).update({
+                    name: currentUser.name,
+                    city: currentUser.city,
+                    dp: currentUser.dp
                 });
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('editProfileModal');
                 await showCustomAlert("Profile updated!", "Success", "✅");
-                fetchData();
             } catch(e) {
                 await showCustomAlert("Failed to update profile", "Error", "❌");
             }
@@ -1045,13 +1076,7 @@
             };
 
             try {
-                const res = await fetch(`${DB_BASE_URL}/products.json`, {
-                    method: 'POST',
-                    body: JSON.stringify(newProduct)
-                });
-                const data = await res.json();
-                
-                products.push({ id: data.name, ...newProduct });
+                await db.ref('products').push(newProduct);
 
                 await showCustomAlert("Item posted successfully!", "Kamyaab!", "🎉");
                 closeModal('sellModal');
@@ -1071,11 +1096,8 @@
             let chk = await showCustomConfirm("Kya aap yeh item delete karna chahte hain?", "Delete Item", "🗑️");
             if(!chk) return;
             try {
-                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
-                products = products.filter(p => p.id !== id);
+                await db.ref(`products/${id}`).remove();
                 await showCustomAlert("Item deleted!", "Deleted", "✅");
-                filterProducts();
-                renderMyItems();
             } catch(e) {
                 await showCustomAlert("Delete failed!", "Error", "❌");
             }
@@ -1097,7 +1119,6 @@
         function closeAdminPanel() {
             document.getElementById('adminView').style.display = 'none';
             document.getElementById('mainAppContainer').style.display = 'block';
-            fetchData();
         }
 
         function switchAdminTab(tab) {
@@ -1138,9 +1159,9 @@
                     uList.innerHTML += `
                         <tr>
                             <td><img src="${dpImg}" style="width:35px;height:35px;border-radius:50%;object-fit:cover;"></td>
-                            <td><b>${u.name || ''}</b></td>
+                            <td><b>${u.name || ''}</b><br><small style="color:#777;">📍 ${u.city || ''}</small></td>
                             <td>${u.phone || ''}</td>
-                            <td>${u.city || ''}</td>
+                            <td><code style="background:#f1f5f9; padding:3px 6px; border-radius:4px; font-weight:bold; color:var(--primary);">${u.password || 'No Password'}</code></td>
                             <td>
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                     <button class="btn-block" onclick="adminBlockUser('${cleanPhone}')">Block</button>
@@ -1220,15 +1241,8 @@
             let chk = await showCustomConfirm("Kya aap is user ko block karna chahte hain?", "Block User", "⚠️");
             if(!chk) return;
             try {
-                await fetch(`${DB_BASE_URL}/blocked.json`, {
-                    method: 'POST',
-                    body: JSON.stringify(phone)
-                });
-                if(!blockedPhones.includes(phone)) blockedPhones.push(phone);
-                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
-
+                await db.ref('blocked').push(phone);
                 await showCustomAlert("User successfully block kar diya gaya hai!", "Blocked", "✅");
-                renderAdminData();
             } catch(e) {
                 await showCustomAlert("Block failed!", "Error", "❌");
             }
@@ -1238,19 +1252,16 @@
             let chk = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
             if(!chk) return;
             try {
-                const res = await fetch(`${DB_BASE_URL}/blocked.json`);
-                const data = await res.json();
+                const snapshot = await db.ref('blocked').once('value');
+                const data = snapshot.val();
                 if(data) {
                     for(let key in data) {
                         if(data[key] === phone) {
-                            await fetch(`${DB_BASE_URL}/blocked/${key}.json`, { method: 'DELETE' });
+                            await db.ref(`blocked/${key}`).remove();
                         }
                     }
                 }
-                blockedPhones = blockedPhones.filter(p => p !== phone);
-                localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
                 await showCustomAlert("Number unblock ho gaya hai ab aap account bana sakte hain!", "Unblocked", "✅");
-                renderAdminData();
             } catch(e) {
                 await showCustomAlert("Unblock failed!", "Error", "❌");
             }
@@ -1260,9 +1271,7 @@
             let chk = await showCustomConfirm("Delete user?", "Confirm", "⚠️");
             if(!chk) return;
             try {
-                await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
-                users = users.filter(u => u.id !== id);
-                renderAdminData();
+                await db.ref(`users/${id}`).remove();
                 await showCustomAlert("User deleted successfully!", "Deleted", "✅");
             } catch(e) {
                 await showCustomAlert("Delete failed!", "Error", "❌");
@@ -1273,13 +1282,26 @@
             let chk = await showCustomConfirm("Delete product?", "Confirm", "⚠️");
             if(!chk) return;
             try {
-                await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
-                products = products.filter(p => p.id !== id);
-                renderAdminData();
+                await db.ref(`products/${id}`).remove();
                 await showCustomAlert("Product deleted successfully!", "Deleted", "✅");
             } catch(e) {
                 await showCustomAlert("Delete failed!", "Error", "❌");
             }
+        }
+    </script>
+
+    <!-- Service Worker Registration for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => {
+                        console.log('Service Worker registered successfully!', reg.scope);
+                    })
+                    .catch((err) => {
+                        console.log('Service Worker registration failed:', err);
+                    });
+            });
         }
     </script>
 </body>
