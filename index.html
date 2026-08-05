@@ -153,6 +153,21 @@
         th { background: #f8fafc; color: var(--primary); font-weight: 700; }
         
         .ad-container { text-align: center; margin: 10px auto; overflow: hidden; display: flex; justify-content: center; }
+
+        /* Modern Custom Popup Styles */
+        .custom-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(3px); animation: fadeIn 0.2s ease; }
+        .custom-popup-box { background: white; border-radius: 14px; width: 100%; max-width: 360px; padding: 24px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,0.25); transform: scale(0.9); animation: scaleUp 0.2s ease forwards; border-top: 4px solid var(--accent); }
+        .custom-popup-icon { font-size: 38px; margin-bottom: 12px; }
+        .custom-popup-title { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .custom-popup-msg { font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+        .custom-popup-btns { display: flex; gap: 10px; }
+        .custom-popup-btn { flex: 1; padding: 11px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: opacity 0.2s; }
+        .custom-popup-btn:hover { opacity: 0.9; }
+        .popup-btn-cancel { background: #f1f5f9; color: #334155; }
+        .popup-btn-ok { background: var(--primary); color: white; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { to { transform: scale(1); } }
     </style>
 
     <!-- Adsterra Social Bar Script -->
@@ -421,6 +436,18 @@
         </div>
     </div>
 
+    <!-- Modern Custom Alert / Confirm Modal -->
+    <div class="custom-popup-overlay" id="customPopupOverlay">
+        <div class="custom-popup-box">
+            <div class="custom-popup-icon" id="popupIcon">💬</div>
+            <div class="custom-popup-title" id="popupTitle">Pakistani Bazaar</div>
+            <div class="custom-popup-msg" id="popupMsg">Message yahan aayega...</div>
+            <div class="custom-popup-btns" id="popupBtns">
+                <button class="custom-popup-btn popup-btn-ok" onclick="closeCustomPopup(true)">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const DB_BASE_URL = "https://pakistani-bazaar-za-default-rtdb.firebaseio.com";
 
@@ -432,6 +459,7 @@
         let tempDpBase64 = "";
         let logoClickCount = 0;
         let deferredPrompt = null;
+        let popupCallback = null;
 
         window.onload = function() {
             updateUserPill();
@@ -445,6 +473,46 @@
             if(installBtn) installBtn.style.display = 'flex';
         });
 
+        // Modern Custom Popup Functions
+        function showCustomAlert(message, title = "Pakistani Bazaar", icon = "📢") {
+            return new Promise((resolve) => {
+                document.getElementById('popupTitle').innerText = title;
+                document.getElementById('popupMsg').innerText = message;
+                document.getElementById('popupIcon').innerText = icon;
+                
+                const btnsDiv = document.getElementById('popupBtns');
+                btnsDiv.innerHTML = `<button class="custom-popup-btn popup-btn-ok" onclick="closeCustomPopup(true)">OK</button>`;
+                
+                document.getElementById('customPopupOverlay').style.display = 'flex';
+                popupCallback = resolve;
+            });
+        }
+
+        function showCustomConfirm(message, title = "Confirm Karein", icon = "⚠️") {
+            return new Promise((resolve) => {
+                document.getElementById('popupTitle').innerText = title;
+                document.getElementById('popupMsg').innerText = message;
+                document.getElementById('popupIcon').innerText = icon;
+                
+                const btnsDiv = document.getElementById('popupBtns');
+                btnsDiv.innerHTML = `
+                    <button class="custom-popup-btn popup-btn-cancel" onclick="closeCustomPopup(false)">Cancel</button>
+                    <button class="custom-popup-btn popup-btn-ok" onclick="closeCustomPopup(true)">Haan, Karein</button>
+                `;
+                
+                document.getElementById('customPopupOverlay').style.display = 'flex';
+                popupCallback = resolve;
+            });
+        }
+
+        function closeCustomPopup(value) {
+            document.getElementById('customPopupOverlay').style.display = 'none';
+            if(popupCallback) {
+                popupCallback(value);
+                popupCallback = null;
+            }
+        }
+
         function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -455,7 +523,7 @@
                     deferredPrompt = null;
                 });
             } else {
-                alert("App pehle se installed hai ya browser support nahi karta!");
+                showCustomAlert("App pehle se installed hai ya browser support nahi karta!", "Info", "ℹ️");
             }
         }
 
@@ -571,14 +639,14 @@
             }
         }
 
-        function openSellModal() {
+        async function openSellModal() {
             if(!currentUser) {
-                alert('Pehle login karein!');
+                await showCustomAlert('Pehle login karein!', 'Login Required', '🔑');
                 openUserProfileModal();
                 return;
             }
             if(blockedPhones.includes(cleanPhoneNumber(currentUser.phone))) {
-                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Access Denied", "🚫");
                 handleLogoutLocally();
                 return;
             }
@@ -595,14 +663,14 @@
             }
         }
 
-        function handleProductImgsUpload(event) {
+        async function handleProductImgsUpload(event) {
             const files = event.target.files;
             const previewBox = document.getElementById('previewBox');
             previewBox.innerHTML = '';
             uploadedImagesBase64 = [];
 
             if (files.length > 5) {
-                alert("Aap maximum 5 images select kar sakte hain!");
+                await showCustomAlert("Aap maximum 5 images select kar sakte hain!", "Limit Exceeded", "⚠️");
                 event.target.value = '';
                 return;
             }
@@ -657,13 +725,13 @@
                 if (currentUser) {
                     const cleanUserPhone = cleanPhoneNumber(currentUser.phone);
                     if (blockedPhones.includes(cleanUserPhone)) {
-                        alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                        await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
                         handleLogoutLocally();
                         return;
                     }
                     const userExists = users.some(u => u.id === currentUser.id);
                     if (!userExists) {
-                        alert("Aapka account delete kar diya gaya hai!");
+                        await showCustomAlert("Aapka account delete kar diya gaya hai!", "Account Deleted", "❌");
                         handleLogoutLocally();
                     }
                 }
@@ -813,7 +881,7 @@
             const phone = cleanPhoneNumber(document.getElementById('loginPhone').value);
             
             if(blockedPhones.includes(phone)) {
-                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
                 return;
             }
 
@@ -822,7 +890,6 @@
             btn.disabled = true;
 
             try {
-                // Fresh fetch users list to make sure we have accurate data
                 const res = await fetch(`${DB_BASE_URL}/users.json`);
                 const data = await res.json();
                 let found = null;
@@ -841,14 +908,14 @@
                     localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                     updateUserPill();
                     closeModal('authModal');
-                    alert("Login successful!");
+                    await showCustomAlert("Login successful!", "Welcome Back", "🎉");
                 } else {
-                    alert("Yeh number register nahi hai! Pehle Sign Up karein.");
+                    await showCustomAlert("Yeh number register nahi hai! Pehle Sign Up karein.", "Not Found", "ℹ️");
                     switchAuthTab('register');
                     document.getElementById('regPhone').value = phone;
                 }
             } catch(err) {
-                alert("Network error. Try again!");
+                await showCustomAlert("Network error. Try again!", "Error", "❌");
             }
             btn.innerText = "Login To Account";
             btn.disabled = false;
@@ -861,7 +928,7 @@
             const phone = cleanPhoneNumber(document.getElementById('regPhone').value);
             
             if(blockedPhones.includes(phone)) {
-                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
                 return;
             }
 
@@ -870,7 +937,6 @@
             btn.disabled = true;
 
             try {
-                // Fresh fetch to ensure double safety against duplicate registrations
                 const res = await fetch(`${DB_BASE_URL}/users.json`);
                 const data = await res.json();
                 let alreadyExists = false;
@@ -885,7 +951,7 @@
                 }
 
                 if(alreadyExists) {
-                    alert("Is number par account pehle se bana hua hai! Baray meharbani Login karein.");
+                    await showCustomAlert("Is number par account pehle se bana hua hai! Baray meharbani Login karein.", "Already Exists", "⚠️");
                     switchAuthTab('login');
                     document.getElementById('loginPhone').value = phone;
                     btn.innerText = "Create New Account";
@@ -905,10 +971,10 @@
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('authModal');
-                alert("Account created successfully!");
+                await showCustomAlert("Account created successfully!", "Success", "🎉");
                 fetchData();
             } catch(err) {
-                alert("Registration failed!");
+                await showCustomAlert("Registration failed!", "Error", "❌");
             }
             btn.innerText = "Create New Account";
             btn.disabled = false;
@@ -929,10 +995,10 @@
                 localStorage.setItem('pb_current_user', JSON.stringify(currentUser));
                 updateUserPill();
                 closeModal('editProfileModal');
-                alert("Profile updated!");
+                await showCustomAlert("Profile updated!", "Success", "✅");
                 fetchData();
             } catch(e) {
-                alert("Failed to update profile");
+                await showCustomAlert("Failed to update profile", "Error", "❌");
             }
         }
 
@@ -953,13 +1019,13 @@
             if(!currentUser) return;
 
             if(blockedPhones.includes(cleanPhoneNumber(currentUser.phone))) {
-                alert("Admin ki taraf se aapko block kar diya gaya hai!");
+                await showCustomAlert("Admin ki taraf se aapko block kar diya gaya hai!", "Blocked", "🚫");
                 handleLogoutLocally();
                 return;
             }
 
             if(uploadedImagesBase64.length === 0) {
-                alert("Bhai, kam az kam 1 tasveer (photo) select karna lazmi hai!");
+                await showCustomAlert("Bhai, kam az kam 1 tasveer (photo) select karna lazmi hai!", "Photo Required", "📸");
                 return;
             }
 
@@ -987,7 +1053,7 @@
                 
                 products.push({ id: data.name, ...newProduct });
 
-                alert("Item posted successfully!");
+                await showCustomAlert("Item posted successfully!", "Kamyaab!", "🎉");
                 closeModal('sellModal');
                 document.getElementById('sellForm').reset();
                 uploadedImagesBase64 = [];
@@ -995,22 +1061,23 @@
                 
                 switchMainTab('buy');
             } catch(e) {
-                alert("Failed to post item.");
+                await showCustomAlert("Failed to post item.", "Error", "❌");
             }
             btn.innerText = "Post Item Now";
             btn.disabled = false;
         }
 
         async function deleteItem(id) {
-            if(!confirm("Kya aap yeh item delete karna chahte hain?")) return;
+            let chk = await showCustomConfirm("Kya aap yeh item delete karna chahte hain?", "Delete Item", "🗑️");
+            if(!chk) return;
             try {
                 await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
                 products = products.filter(p => p.id !== id);
-                alert("Item deleted!");
+                await showCustomAlert("Item deleted!", "Deleted", "✅");
                 filterProducts();
                 renderMyItems();
             } catch(e) {
-                alert("Delete failed!");
+                await showCustomAlert("Delete failed!", "Error", "❌");
             }
         }
 
@@ -1023,7 +1090,7 @@
                 document.getElementById('adminView').style.display = 'block';
                 renderAdminData();
             } else {
-                alert("Ghalat password!");
+                showCustomAlert("Ghalat password!", "Access Denied", "❌");
             }
         }
 
@@ -1150,7 +1217,8 @@
         }
 
         async function adminBlockUser(phone) {
-            if(!confirm("Kya aap is user ko block karna chahte hain?")) return;
+            let chk = await showCustomConfirm("Kya aap is user ko block karna chahte hain?", "Block User", "⚠️");
+            if(!chk) return;
             try {
                 await fetch(`${DB_BASE_URL}/blocked.json`, {
                     method: 'POST',
@@ -1159,15 +1227,16 @@
                 if(!blockedPhones.includes(phone)) blockedPhones.push(phone);
                 localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
 
-                alert("User successfully block kar diya gaya hai!");
+                await showCustomAlert("User successfully block kar diya gaya hai!", "Blocked", "✅");
                 renderAdminData();
             } catch(e) {
-                alert("Block failed!");
+                await showCustomAlert("Block failed!", "Error", "❌");
             }
         }
 
         async function adminUnblockUser(phone) {
-            if(!confirm("Kya aap is number ko unblock karna chahte hain?")) return;
+            let chk = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
+            if(!chk) return;
             try {
                 const res = await fetch(`${DB_BASE_URL}/blocked.json`);
                 const data = await res.json();
@@ -1180,34 +1249,36 @@
                 }
                 blockedPhones = blockedPhones.filter(p => p !== phone);
                 localStorage.setItem('pb_blocked_phones', JSON.stringify(blockedPhones));
-                alert("Number unblock ho gaya hai ab aap account bana sakte hain!");
+                await showCustomAlert("Number unblock ho gaya hai ab aap account bana sakte hain!", "Unblocked", "✅");
                 renderAdminData();
             } catch(e) {
-                alert("Unblock failed!");
+                await showCustomAlert("Unblock failed!", "Error", "❌");
             }
         }
 
         async function adminDeleteUser(id) {
-            if(!confirm("Delete user?")) return;
+            let chk = await showCustomConfirm("Delete user?", "Confirm", "⚠️");
+            if(!chk) return;
             try {
                 await fetch(`${DB_BASE_URL}/users/${id}.json`, { method: 'DELETE' });
                 users = users.filter(u => u.id !== id);
                 renderAdminData();
-                alert("User deleted successfully!");
+                await showCustomAlert("User deleted successfully!", "Deleted", "✅");
             } catch(e) {
-                alert("Delete failed!");
+                await showCustomAlert("Delete failed!", "Error", "❌");
             }
         }
 
         async function adminDeleteProduct(id) {
-            if(!confirm("Delete product?")) return;
+            let chk = await showCustomConfirm("Delete product?", "Confirm", "⚠️");
+            if(!chk) return;
             try {
                 await fetch(`${DB_BASE_URL}/products/${id}.json`, { method: 'DELETE' });
                 products = products.filter(p => p.id !== id);
                 renderAdminData();
-                alert("Product deleted successfully!");
+                await showCustomAlert("Product deleted successfully!", "Deleted", "✅");
             } catch(e) {
-                alert("Delete failed!");
+                await showCustomAlert("Delete failed!", "Error", "❌");
             }
         }
     </script>
