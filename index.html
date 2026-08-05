@@ -93,6 +93,12 @@
 
         .btn-unblock { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
 
+        /* Install App Banner / Button Style */
+        .install-banner { display: none; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 12px 18px; margin: 15px auto; max-width: 1200px; border-radius: 10px; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,47,52,0.2); border: 1px solid var(--accent); }
+        .install-banner-text { font-size: 14px; font-weight: 600; }
+        .install-banner-btn { background: var(--accent); color: var(--primary); border: none; padding: 8px 16px; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 13px; transition: transform 0.2s; }
+        .install-banner-btn:hover { transform: scale(1.05); }
+
         /* Bottom Navbar */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 2px solid var(--accent); display: flex; justify-content: space-around; padding: 8px 0; z-index: 150; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); }
         .nav-tab { flex: 1; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; }
@@ -207,6 +213,10 @@
             <a href="#" class="sidebar-item" onclick="toggleSidebar(false); switchMainTab('sell');">
                 <span class="icon">🏷️</span> My Selling Items
             </a>
+            <!-- Sidebar Install App Button -->
+            <a href="#" class="sidebar-item" id="sidebarInstallBtn" style="display: none; color: var(--primary); font-weight: 700;" onclick="installPWA(); toggleSidebar(false);">
+                <span class="icon">📥</span> Install App
+            </a>
             <div class="sidebar-divider"></div>
             <a href="https://wa.me/923284104285?text=Salam!%20Mujhe%20Pakistani%20Bazaar%20website%20ke%20baray%20mein%20baat%20karni%20hai." target="_blank" class="sidebar-item" onclick="toggleSidebar(false)">
                 <span class="icon" style="color: var(--success);">💬</span> Contact with Admin
@@ -234,6 +244,12 @@
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer">
         <div id="tabBuyContent">
+            <!-- Install App Prompt Banner -->
+            <div id="installBanner" class="install-banner" style="display: none; margin: 15px;">
+                <div class="install-banner-text">📱 Pakistani Bazaar ko apne mobile mein install karein!</div>
+                <button class="install-banner-btn" onclick="installPWA()">Install App</button>
+            </div>
+
             <div class="search-section">
                 <div class="search-box">
                     <select id="cityFilter" onchange="filterProducts()">
@@ -474,6 +490,7 @@
         let logoClickCount = 0;
         let popupCallback = null;
         let sessionListenerRef = null;
+        let deferredPrompt = null;
 
         window.onload = function() {
             updateUserPill();
@@ -482,6 +499,32 @@
                 startSessionListener();
             }
         };
+
+        // PWA Install Prompt Handler
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBanner = document.getElementById('installBanner');
+            const sidebarInstallBtn = document.getElementById('sidebarInstallBtn');
+            if (installBanner) installBanner.style.display = 'flex';
+            if (sidebarInstallBtn) sidebarInstallBtn.style.display = 'flex';
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').style.display = 'none';
+                    document.getElementById('sidebarInstallBtn').style.display = 'none';
+                });
+            }
+        }
 
         // Modern Custom Popup Functions
         function showCustomAlert(message, title = "Pakistani Bazaar", icon = "📢") {
@@ -936,11 +979,9 @@
                     if(found.password && found.password !== pass) {
                         await showCustomAlert("Ghalat password! Baray meharbani theek password dein.", "Wrong Password", "❌");
                     } else {
-                        // Naya Session ID generate karo
                         const newSessionId = 'sess_' + Date.now() + Math.random().toString(36).substring(2);
                         found.sessionId = newSessionId;
 
-                        // Database mein update karo
                         await db.ref(`users/${found.id}`).update({ sessionId: newSessionId });
 
                         currentUser = found;
