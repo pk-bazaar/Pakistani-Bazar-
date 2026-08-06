@@ -18,6 +18,7 @@
             color: #e2e8f0 !important;
             box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 80px;
+            overflow-x: hidden !important; width: 100%; max-width: 100%;
         }
 
         :root {
@@ -38,23 +39,19 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
         /* Modern Header */
-        header { background: linear-gradient(135deg, #2e1065, #4c1d95) !important; color: white; padding: 14px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.18); border-bottom: 2px solid #7c3aed !important; }
-        .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        header { background: linear-gradient(135deg, #2e1065, #4c1d95) !important; color: white; padding: 14px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.18); border-bottom: 2px solid #7c3aed !important; width: 100%; }
+        .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
         
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .menu-toggle-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; transition: all 0.25s ease; }
+        .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .menu-toggle-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; transition: all 0.25s ease; flex-shrink: 0; }
         .menu-toggle-btn:hover { background: rgba(124, 58, 237, 0.3); border-color: var(--accent); transform: scale(1.05); }
 
-        .logo-area { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; user-select: none; }
-        .logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.4); }
-        .logo { font-size: 20px; font-weight: 800; color: #a78bfa; text-decoration: none; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .logo-area { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; user-select: none; min-width: 0; overflow: hidden; }
+        .logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.4); flex-shrink: 0; }
+        .logo { font-size: 20px; font-weight: 800; color: #a78bfa; text-decoration: none; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .logo span { color: #ffffff; }
 
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-
-        .user-pill { background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 25px; font-size: 13px; border: 1px solid rgba(139,92,246,0.3); color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.25s ease; backdrop-filter: blur(5px); }
-        .user-pill:hover { background: rgba(139,92,246,0.2); border-color: var(--accent); transform: translateY(-1px); }
-        .user-dp-icon { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1.5px solid #8b5cf6; }
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
         /* Slide-out Sidebar Panel */
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 250; backdrop-filter: blur(4px); transition: opacity 0.3s ease; }
@@ -73,8 +70,8 @@
         .sidebar-divider { height: 1px; background: var(--border-color); margin: 10px 15px; }
 
         /* Search Section */
-        .search-section { background: linear-gradient(180deg, #2e1065, #4c1d95); padding: 16px 20px 24px; border-bottom: 4px solid #7c3aed; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .search-box { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-section { background: linear-gradient(180deg, #2e1065, #4c1d95); padding: 16px 20px 24px; border-bottom: 4px solid #7c3aed; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; }
+        .search-box { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
         .search-box select { padding: 12px 16px; border-radius: 10px; border: 2px solid #8b5cf6; font-size: 14px; outline: none; background: #1e1b4b; font-weight: 700; color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s; }
         .search-box select:focus { border-color: #a78bfa; }
         .search-box input { flex: 1; padding: 12px 18px; border-radius: 10px; border: 2px solid #8b5cf6; font-size: 14px; outline: none; min-width: 200px; background: #1e1b4b; color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-weight: 500; transition: all 0.2s; }
@@ -90,6 +87,7 @@
             display: grid; 
             grid-template-columns: repeat(2, 1fr) !important; 
             gap: 10px !important; 
+            width: 100%;
         }
         
         .product-card { 
@@ -103,6 +101,7 @@
             cursor: pointer; 
             position: relative; 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); 
+            width: 100%;
         }
         .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(124, 58, 237, 0.2); border-color: #8b5cf6; }
         
@@ -115,11 +114,11 @@
         }
         .product-card:hover .card-img { transform: scale(1.03); }
         
-        .card-body { padding: 10px; display: flex; flex-direction: column; flex: 1; }
+        .card-body { padding: 10px; display: flex; flex-direction: column; flex: 1; width: 100%; overflow: hidden; }
         .card-price { font-size: 16px; font-weight: 800; color: #fbbf24 !important; margin-bottom: 4px; }
-        .card-title { font-size: 13px; color: #f3f4f6 !important; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
-        .card-desc-snippet { font-size: 11px; color: #a78bfa !important; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-badge { align-self: flex-start; background: rgba(124, 58, 237, 0.2); color: #c4b5fd; font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 700; margin-bottom: 10px; border: 1px solid #7c3aed; }
+        .card-title { font-size: 13px; color: #f3f4f6 !important; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; width: 100%; }
+        .card-desc-snippet { font-size: 11px; color: #a78bfa !important; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .card-badge { align-self: flex-start; background: rgba(124, 58, 237, 0.2); color: #c4b5fd; font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 700; margin-bottom: 10px; border: 1px solid #7c3aed; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         /* WhatsApp Button */
         .btn-whatsapp { background: #25d366 !important; color: white !important; border: none !important; padding: 8px; border-radius: 6px; font-weight: 700; font-size: 12px; width: 100%; margin-top: auto; cursor: pointer; display: inline-block; text-align: center; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,211,102,0.25); }
@@ -134,7 +133,7 @@
         .btn-unblock { background: #25d366 !important; color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,211,102,0.25); }
 
         /* Install App Banner / Button Style */
-        .install-banner { display: none; background: linear-gradient(135deg, #2e1065, #4c1d95); color: white; padding: 16px 22px; margin: 15px auto; max-width: 1200px; border-radius: 14px; align-items: center; justify-content: space-between; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 2px solid #8b5cf6; }
+        .install-banner { display: none; background: linear-gradient(135deg, #2e1065, #4c1d95); color: white; padding: 16px 22px; margin: 15px auto; max-width: 1200px; border-radius: 14px; align-items: center; justify-content: space-between; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 2px solid #8b5cf6; width: calc(100% - 30px); }
         .install-banner-text { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
         .install-banner-btn { background: #7c3aed; color: #ffffff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 13px; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4); }
         .install-banner-btn:hover { transform: scale(1.06); background: #6d28d9; }
@@ -200,7 +199,7 @@
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #1e1b4b; vertical-align: middle; }
         th { background: #1e1b4b; color: #a78bfa; font-weight: 800; border-top-left-radius: 6px; border-top-right-radius: 6px; }
         
-        .ad-container { text-align: center; margin: 12px auto; overflow: hidden; display: flex; justify-content: center; }
+        .ad-container { text-align: center; margin: 12px auto; overflow: hidden; display: flex; justify-content: center; width: 100%; max-width: 100%; }
 
         /* Modern Custom Popup Styles */
         .custom-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 9999; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease; }
@@ -219,7 +218,7 @@
     </style>
 
     <!-- Adsterra Social Bar Script -->
-    <script src="https://pl29744814.effectivecpmnetwork.com/92/29/ae/9229aebafaeada61d93beb47f1568ee0.js"></script>
+    <script src="https://pl29744814.effectivecpmnetwork.com/92/29/ae/9229aebafaeada61d93beb47f1568ee0.js" async></script>
     
     <!-- Firebase SDK (Compat Version for Realtime DB Listeners) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -238,7 +237,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <div id="userPill" class="user-pill" onclick="openUserProfileModal()"><span>Guest (Login)</span></div>
+                <!-- Profile icon removed completely as requested -->
             </div>
         </div>
     </header>
@@ -266,8 +265,8 @@
             <a href="https://wa.me/923284104285?text=Salam!%20Mujhe%20Pakistani%20Bazaar%20website%20ke%20baray%20mein%20baat%20karni%20hai." target="_blank" class="sidebar-item" onclick="toggleSidebar(false)">
                 <span class="icon" style="color: var(--success);">💬</span> Contact with Admin
             </a>
-            <a href="#" class="sidebar-item" onclick="toggleSidebar(false); openUserProfileModal();">
-                <span class="icon">👤</span> Account Settings
+            <a href="#" class="sidebar-item" id="sidebarAuthItem" onclick="toggleSidebar(false); openUserProfileModal();">
+                <span class="icon" id="sidebarAuthIcon">🔑</span> <span id="sidebarAuthText">Login / Sign Up</span>
             </a>
         </div>
     </div>
@@ -283,14 +282,14 @@
             'params' : {}
           };
         </script>
-        <script src="https://www.highperformanceformat.com/90189c871ed62cb66716bfd097dfbff2/invoke.js"></script>
+        <script src="https://www.highperformanceformat.com/90189c871ed62cb66716bfd097dfbff2/invoke.js" async></script>
     </div>
 
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer">
         <div id="tabBuyContent">
             <!-- Install App Prompt Banner -->
-            <div id="installBanner" class="install-banner" style="display: none; margin: 15px;">
+            <div id="installBanner" class="install-banner" style="display: none; margin: 15px auto;">
                 <div class="install-banner-text">📱 Pakistani Bazaar ko apne mobile mein install karein!</div>
                 <button class="install-banner-btn" onclick="installPWA()">Install App</button>
             </div>
@@ -690,14 +689,18 @@
         }
 
         function updateUserPill() {
-            const pill = document.getElementById('userPill');
             const sidebarName = document.getElementById('sidebarUserName');
+            const sidebarAuthText = document.getElementById('sidebarAuthText');
+            const sidebarAuthIcon = document.getElementById('sidebarAuthIcon');
+            
             if(currentUser) {
-                pill.innerHTML = `<img src="${currentUser.dp || 'https://via.placeholder.com/26?text=U'}" class="user-dp-icon"> <span>${currentUser.name}</span>`;
                 if(sidebarName) sidebarName.innerText = `Hi, ${currentUser.name}`;
+                if(sidebarAuthText) sidebarAuthText.innerText = `Account Settings / Logout`;
+                if(sidebarAuthIcon) sidebarAuthIcon.innerText = `👤`;
             } else {
-                pill.innerHTML = `<span>Guest (Login)</span>`;
                 if(sidebarName) sidebarName.innerText = `Welcome, Guest`;
+                if(sidebarAuthText) sidebarAuthText.innerText = `Login / Sign Up`;
+                if(sidebarAuthIcon) sidebarAuthIcon.innerText = `🔑`;
             }
         }
 
@@ -1350,7 +1353,7 @@
         }
 
         async function adminUnblockUser(phone) {
-            let chk = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
+            let chk = rules = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
             if(!chk) return;
             try {
                 const snapshot = await db.ref('blocked').once('value');
