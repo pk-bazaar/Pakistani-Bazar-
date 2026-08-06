@@ -124,13 +124,13 @@
         .btn-whatsapp { background: #25d366 !important; color: white !important; border: none !important; padding: 8px; border-radius: 6px; font-weight: 700; font-size: 12px; width: 100%; margin-top: auto; cursor: pointer; display: inline-block; text-align: center; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,211,102,0.25); }
         .btn-whatsapp:hover { background: #22bf5b !important; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(37,211,102,0.35); }
 
-        .btn-delete { background: var(--danger); color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(255,77,79,0.25); }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(255,77,79,0.25); }
         .btn-delete:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .btn-block { background: var(--warning); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(250,173,20,0.25); }
+        .btn-block { background: var(--warning); color: #fff; border: none; padding: 5px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(250,173,20,0.25); }
         .btn-block:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .btn-unblock { background: #25d366 !important; color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,211,102,0.25); }
+        .btn-unblock { background: #25d366 !important; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,211,102,0.25); }
 
         /* Install App Banner / Button Style */
         .install-banner { display: none; background: linear-gradient(135deg, #2e1065, #4c1d95); color: white; padding: 16px 22px; margin: 15px auto; max-width: 1200px; border-radius: 14px; align-items: center; justify-content: space-between; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 2px solid #8b5cf6; width: calc(100% - 30px); }
@@ -188,16 +188,17 @@
         .details-meta { font-size: 13px; color: #a78bfa !important; margin-bottom: 16px; font-weight: 700; background: #1e1b4b; padding: 6px 12px; border-radius: 8px; display: inline-block; }
         .details-desc-box { background: #1e1b4b; padding: 14px; border-radius: 10px; border: 1px solid #3b0764; margin-bottom: 18px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #e2e8f0; }
 
-        /* Admin View */
-        .admin-view { display: none; background: #171229; padding: 24px; border-radius: 16px; border: 1px solid #3b0764; margin: 25px auto; width: 100%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-        .admin-nav { display: flex; gap: 10px; margin-bottom: 18px; border-bottom: 2px solid #1e1b4b; padding-bottom: 12px; flex-wrap: wrap; }
-        .admin-tab { padding: 9px 18px; background: #1e1b4b; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; color: #f3f4f6; transition: all 0.2s; }
+        /* Admin View Fixes */
+        .admin-view { display: none; background: #171229; padding: 16px; border-radius: 16px; border: 1px solid #3b0764; margin: 15px auto; width: 100%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .admin-nav { display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 2px solid #1e1b4b; padding-bottom: 10px; flex-wrap: wrap; }
+        .admin-tab { padding: 8px 14px; background: #1e1b4b; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; color: #f3f4f6; transition: all 0.2s; }
         .admin-tab.active { background: #7c3aed; color: white; box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
-        .admin-search { width: 100%; padding: 12px 16px; border: 1.5px solid #3b0764; border-radius: 10px; margin-bottom: 18px; font-size: 14px; outline: none; background: #1e1b4b; color: #ffffff; font-weight: 500; }
+        .admin-search { width: 100%; padding: 10px 14px; border: 1.5px solid #3b0764; border-radius: 10px; margin-bottom: 14px; font-size: 13px; outline: none; background: #1e1b4b; color: #ffffff; font-weight: 500; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; color: #e2e8f0; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #1e1b4b; vertical-align: middle; }
-        th { background: #1e1b4b; color: #a78bfa; font-weight: 800; border-top-left-radius: 6px; border-top-right-radius: 6px; }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; color: #e2e8f0; white-space: nowrap; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #1e1b4b; vertical-align: middle; }
+        th { background: #1e1b4b; color: #a78bfa; font-weight: 800; }
         
         .ad-container { text-align: center; margin: 12px auto; overflow: hidden; display: flex; justify-content: center; width: 100%; max-width: 100%; }
 
@@ -236,9 +237,7 @@
                     <div class="logo">Pakistani<span>Bazaar</span></div>
                 </div>
             </div>
-            <div class="header-actions">
-                <!-- Profile icon removed completely as requested -->
-            </div>
+            <div class="header-actions"></div>
         </div>
     </header>
 
@@ -257,7 +256,6 @@
             <a href="#" class="sidebar-item" onclick="toggleSidebar(false); switchMainTab('sell');">
                 <span class="icon">🏷️</span> My Selling Items
             </a>
-            <!-- Sidebar Install App Button -->
             <a href="#" class="sidebar-item" id="sidebarInstallBtn" style="display: none; color: #f3f4f6; font-weight: 700;" onclick="installPWA(); toggleSidebar(false);">
                 <span class="icon">📥</span> Install App
             </a>
@@ -288,7 +286,6 @@
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer">
         <div id="tabBuyContent">
-            <!-- Install App Prompt Banner -->
             <div id="installBanner" class="install-banner" style="display: none; margin: 15px auto;">
                 <div class="install-banner-text">📱 Pakistani Bazaar ko apne mobile mein install karein!</div>
                 <button class="install-banner-btn" onclick="installPWA()">Install App</button>
@@ -343,26 +340,32 @@
 
         <div id="adminUsersTab">
             <input type="text" id="adminUserSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search user by name or phone...">
-            <table>
-                <thead><tr><th>DP</th><th>Name & City</th><th>Phone</th><th>Password</th><th>Actions</th></tr></thead>
-                <tbody id="adminUsersList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>DP</th><th>Name & City</th><th>Phone</th><th>Password</th><th>Actions</th></tr></thead>
+                    <tbody id="adminUsersList"></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="adminBlockedTab" style="display: none;">
             <input type="text" id="adminBlockedSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search blocked phone/user...">
-            <table>
-                <thead><tr><th>Phone / Ghost Record</th><th>Action</th></tr></thead>
-                <tbody id="adminBlockedList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Phone / Ghost Record</th><th>Action</th></tr></thead>
+                    <tbody id="adminBlockedList"></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="adminProductsTab" style="display: none;">
             <input type="text" id="adminProductSearch" class="admin-search" oninput="renderAdminData()" placeholder="Search product by title, city or uploader...">
-            <table>
-                <thead><tr><th>Photo</th><th>Title & Price</th><th>Uploader</th><th>Action</th></tr></thead>
-                <tbody id="adminProductsList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Photo</th><th>Title & Price</th><th>Uploader</th><th>Action</th></tr></thead>
+                    <tbody id="adminProductsList"></tbody>
+                </table>
+            </div>
         </div>
     </main>
 
@@ -1267,7 +1270,7 @@
                             <td>${u.phone || ''}</td>
                             <td><code style="background:#1e1b4b; padding:3px 6px; border-radius:4px; font-weight:bold; color:#c4b5fd;">${u.password || 'No Password'}</code></td>
                             <td>
-                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <div style="display:flex; gap:6px;">
                                     <button class="btn-block" onclick="adminBlockUser('${cleanPhone}')">Block</button>
                                     <button class="btn-delete" onclick="adminDeleteUser('${u.id}')">Delete</button>
                                 </div>
@@ -1353,7 +1356,7 @@
         }
 
         async function adminUnblockUser(phone) {
-            let chk = rules = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
+            let chk = await showCustomConfirm("Kya aap is number ko unblock karna chahte hain?", "Unblock User", "🔓");
             if(!chk) return;
             try {
                 const snapshot = await db.ref('blocked').once('value');
